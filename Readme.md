@@ -4,6 +4,21 @@ Verifies the switcharoo chain is correctly linked and unbroken. This bot focuses
 on verifying new additions to the chain. A future project may verify the chain 
 going down.
 
+## Setup/Running
+
+Create a file called `credentials.json` in the root directory of this project 
+and in it place the following:
+```json
+{
+  "client_id": "reddit api client id",
+  "client_secret": "reddit api client secret",
+  "username": "username of bot",
+  "password": "password of bot"
+}
+```
+
+then run `main.py`.
+
 ## How it works
 
 ### Basic Logic
@@ -11,9 +26,14 @@ When someone posts a comment to r/switcharoo, the bot
 
 * Checks the link
     * is to a comment that
+        * contains a switcharoo
         * is a correct link to the previous switcharoo
         * is not a duplicate (future feature)
     * has the `?context=x` end
+
+In testing, I found it is common for people to link to the wrong comment (i.e. 
+the parent comment to the actual link). In the future, adding a search for the 
+correct comment would be useful.
 
 I have yet to find a duplicate link to test how such a thing would happen. I did 
 find a duplicate but strangely it lacked a submission.
@@ -34,6 +54,10 @@ the chain but hopefully the OP would be responsive.
 If it is an exact duplicate link or only separated by one level of comments, delete 
 it. If it separated by more levels, comment on it to alert the poster and flair it 
 to alert the next switcharoo poster in the chain.
+
+If incorrectly linked, comment on it to alert the poster and flair it to alert the
+next switcharoo poster in the chain. We could also take a strong approach and just
+delete it.
 
 ## More info
 
