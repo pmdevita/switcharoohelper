@@ -24,7 +24,8 @@ I can run the bot for the mods of r/switcharoo if they would like.
 ## How it works
 
 ### Basic Logic
-When someone posts a comment to r/switcharoo, the bot
+When someone posts a submission (that should be linking to the switcharoo comment) to 
+r/switcharoo, the bot
 
 * Checks the link
     * is to a comment that
@@ -34,7 +35,7 @@ When someone posts a comment to r/switcharoo, the bot
     * has the `?context=x` end
 
 In testing, I found it is common for people to link to the wrong comment (i.e. 
-the parent comment to the actual link). In the future, adding a search for the 
+the parent comment to the actual link). In the future, adding a search algorithm for the 
 correct comment would be useful.
 
 I have yet to find a duplicate link to test how such a thing would happen. I did 
@@ -68,7 +69,7 @@ like to use it for something else, I will send them the account.
 
 ## To do
 
-* Define two modes
+* Make two modes of operation
     * Actually perform actions on the subreddit
     * Describe actions to the console without doing them
 * Search for correct comment when linked incorrectly
