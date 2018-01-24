@@ -19,6 +19,8 @@ and in it place the following:
 
 then run `main.py`.
 
+I can run the bot for the mods of r/switcharoo if they would like.
+
 ## How it works
 
 ### Basic Logic
@@ -63,3 +65,10 @@ delete it.
 
 This bot is being run from user /u/switcharoohelper. If the r/switcharoo mods would 
 like to use it for something else, I will send them the account.
+
+## To do
+
+* Define two modes
+    * Actually perform actions on the subreddit
+    * Describe actions to the console without doing them
+* Search for correct comment when linked incorrectly
