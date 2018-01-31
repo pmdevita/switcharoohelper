@@ -1,9 +1,8 @@
 import praw
 import time
-import json
 
 from credentials import get_credentials
-from core import process, last_data
+from core import process, last_data, action
 from core import constants as consts
 
 credentials = get_credentials()
@@ -16,9 +15,12 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 
 switcharoo = reddit.subreddit("switcharoo")
 
+# Create object to perform actions
+act = action.PrintAction(reddit)
+
 # Restore or make data for last check and last thread in switcharoo
 data = last_data.LastData()
-last_check = data.data.get("last_check", time.time()-60*60*24*3)
+last_check = data.data.get("last_check", time.time()-60*60*24*5)
 last_thread = data.data.get("last_thread", None)
 if last_thread:
     reddit.submission(last_thread)
@@ -36,7 +38,7 @@ try:
 
         # Process every submission
         for submission in submissions:
-            last_thread = process(reddit, submission, last_thread)
+            last_thread = process(reddit, submission, last_thread, act)
 
         # Get the creation date from the last submission to look for anything more recent than it next loop
         if submissions:

@@ -32,7 +32,7 @@ r/switcharoo, the bot
         * contains a switcharoo
         * is a correct link to the previous switcharoo
         * is not a duplicate (future feature)
-    * has the `?context=x` end
+    * has the `?context=x` suffix
 
 In testing, I found it is common for people to link to the wrong comment (i.e. 
 the parent comment to the actual link). In the future, adding a search algorithm for the 
@@ -49,7 +49,7 @@ We can (theoretically) check a link is not a duplicate by
 
 ### Recommendations for action
 
-If the switcharoo post is just missing the `?context=` add-on, comment on 
+If the switcharoo post is just missing the `?context=` suffix, comment on 
 it to alert the poster and flair it to alert the next switcharoo poster in the 
 chain. We could delete it if we want to take a very strong approach to preserving
 the chain but hopefully the OP would be responsive.
@@ -68,8 +68,5 @@ This bot is being run from user /u/switcharoohelper. If the r/switcharoo mods wo
 like to use it for something else, I will send them the account.
 
 ## To do
-
-* Make two modes of operation
-    * Actually perform actions on the subreddit
-    * Describe actions to the console without doing them
+* Switch config from json to configparser
 * Search for correct comment when linked incorrectly
