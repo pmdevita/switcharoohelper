@@ -13,6 +13,9 @@ class LastData:
         except FileNotFoundError:
             self.data = {}
 
+    def get(self, *args, **kwargs):
+        return self.data.get(*args, **kwargs)
+
     def save(self):
         with open(self.path, "w") as f:
             json.dump(self.data, f)
