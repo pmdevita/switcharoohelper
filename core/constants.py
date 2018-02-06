@@ -1,9 +1,9 @@
-version = "0.8"
+version = "0.8.1"
 user_agent = "SwitcharooHelper by /u/pmdevita v{}"
 sleep_time = 120
 sleep_time_test = 10
 
-ModActionStrings:
+class ModActionStrings:
     header = "{} First, thank you for contributing to /r/switcharoo! The sub only exists thanks to people " \
              "such as yourself who are willing to put the time in to keep the chain going. \n\n"
 

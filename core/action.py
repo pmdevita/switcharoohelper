@@ -117,8 +117,10 @@ class ModAction(BaseAction):
                 warnings = ""
         message = message + MS.footer
 
-        # Reply and delete (if that is what we are supposed to do)!
+        print(message)
+        # print("Let's go for it!", action==DELETE)
+        # input()
+        # # Reply and delete (if that is what we are supposed to do)!
         # submission.reply(message)
         # if action == DELETE:
         #     submission.mod.remove()
-        print(message)

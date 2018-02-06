@@ -1,10 +1,15 @@
+import re
+
 """
 Provides different methods to parse Reddit data
 """
 
+class REPatterns:
+    link = re.compile("\[.*?\] *\n? *\((.*?)\)")
 
 def thread_url_to_id(url):
     """
+    TODO: Make a regex expression instead
     Get ids from a reddit thread link
     :param url:
     :return: Thread ID and comment ID
@@ -31,9 +36,12 @@ def thread_url_to_id(url):
 
 def parse_comment(text):
     """Get url from switcharoo comment"""
-    if "](" not in text:
+    # Reddit allows infinite spaces and up to one character turn in
+    # between the [] and () parts. We actually have to do a serious
+    # breakdown of the text.
+    match = REPatterns.link.findall(text)
+    if match:
+        return match[0]
+    else:
         return None
-    start = text.index("](") + 2
-    end = text.index(")", start)
-    url = text[start:end]
-    return url
+
