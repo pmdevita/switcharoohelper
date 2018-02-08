@@ -5,6 +5,7 @@ Provides different methods to parse Reddit data
 """
 
 class REPatterns:
+    # returns the URL from a Reddit embedded hyperlink
     link = re.compile("\[.*?\] *\n? *\((.*?)\)")
 
 def thread_url_to_id(url):
@@ -36,9 +37,6 @@ def thread_url_to_id(url):
 
 def parse_comment(text):
     """Get url from switcharoo comment"""
-    # Reddit allows infinite spaces and up to one character turn in
-    # between the [] and () parts. We actually have to do a serious
-    # breakdown of the text.
     match = REPatterns.link.findall(text)
     if match:
         return match[0]

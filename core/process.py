@@ -6,7 +6,7 @@ from core import parse
 from core.issues import *
 
 
-def process(reddit, submission, last_good_submission, last_submission, action):
+def process(reddit, submission, last_switcharoo, action):
     """
     Check the submission to make sure it is correct
     :param reddit: PRAW reddit instance
@@ -19,16 +19,13 @@ def process(reddit, submission, last_good_submission, last_submission, action):
 
     # Verify it is a link post (not a self post)
     if submission.is_self:
-        return last_good_submission, last_submission
+        return
 
     # Verify it is a link to a reddit thread
     if submission.domain != "reddit.com":
-        return last_good_submission, last_submission
+        return
 
     print("Roo:", submission.title)
-
-    # Since this is confirmed to be a roo post, it will be the new last_submission next time
-    new_last_submission = submission.url
 
     # Verify it contains ?context
     if "?context" not in submission.url:
@@ -37,13 +34,16 @@ def process(reddit, submission, last_good_submission, last_submission, action):
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)
 
+    # We'll need the last verified good switcharoo from here on
+    last_good_submission = last_switcharoo.last_good()
+
     # If there was a comment in the link, make the comment object
     if comment_id:
         comment = reddit.comment(comment_id)
     else:   # If there was no comment in the link, take action
         action.add_issue(submission_linked_thread)
         action.act(submission, last_good_submission)
-        return last_good_submission, new_last_submission
+        return
 
     # If comment was deleted, this will make an error. The try alleviates that
     try:
@@ -51,13 +51,13 @@ def process(reddit, submission, last_good_submission, last_submission, action):
     except praw.exceptions.ClientException:
         action.add_issue(comment_deleted)
         action.act(submission, last_good_submission)
-        return last_good_submission, new_last_submission
+        return
 
     # Deleted comments sometimes don't generate errors
     if comment.author is None or comment.body == "[removed]":
         action.add_issue(comment_deleted)
-        action.act(submission, last_good_submission)
-        return last_good_submission, new_last_submission
+        action.act(submission, last_switcharoo.last_good())
+        return
 
     # Get link in comment
     comment_link = parse.parse_comment(comment.body)
@@ -72,7 +72,7 @@ def process(reddit, submission, last_good_submission, last_submission, action):
         """
         action.add_issue(comment_has_no_link)
         action.act(submission, last_good_submission)
-        return last_good_submission, new_last_submission
+        return
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
     next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
@@ -91,8 +91,8 @@ def process(reddit, submission, last_good_submission, last_submission, action):
         else:
             # Was this linked correctly linked to the last thread and it wasn't good or
             # was this linked to something else?
-            last_thread_id, last_commend_id = parse.thread_url_to_id(last_submission)
-            if next_thread_id == last_thread_id and next_comment_id == last_commend_id:
+            last_thread_id, last_comment_id = parse.thread_url_to_id(last_switcharoo.last_submitted())
+            if next_thread_id == last_thread_id and next_comment_id == last_comment_id:
                 # User correctly linked, the roo was just bad
                 action.add_issue(comment_linked_bad_roo)
             else:
@@ -103,5 +103,6 @@ def process(reddit, submission, last_good_submission, last_submission, action):
 
     action.act(submission, last_good_submission)
 
-    return {"thread_id": thread_id, "comment_id": comment_id, "submission": submission,
-            "submission_url": submission.url}, new_last_submission
+    last_switcharoo.add_good(submission, thread_id, comment_id)
+
+    return

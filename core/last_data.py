@@ -18,4 +18,4 @@ class LastData:
 
     def save(self):
         with open(self.path, "w") as f:
-            json.dump(self.data, f)
+            json.dump(self.data, f, sort_keys=True, indent=4)

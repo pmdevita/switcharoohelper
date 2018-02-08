@@ -5,13 +5,14 @@ from core.constants import ModActionStrings as MS
 DELETE = 0
 WARN = 1
 
+
 class BaseAction:
     def __init__(self, reddit):
         """
         :param reddit: PRAW Reddit instance
         """
-        self.reddit = reddit
         self.issues = []
+        self.reddit = reddit
 
     def add_issue(self, issue):
         self.issues.append(issue)
@@ -25,6 +26,7 @@ class BaseAction:
 
     def reset(self):
         self.issues = []
+
 
 class PrintAction(BaseAction):
     def process(self, submission, last_submission=None):
@@ -50,8 +52,9 @@ class PrintAction(BaseAction):
         for i in message_lines:
             print(" ", i)
 
+
 class ModAction(BaseAction):
-    def process(self, submission, last_submission=None):
+    def process(self, submission, last_good_submission=None):
         # List of descriptions of every error the roo made
         message_lines = []
         # Do we request the user resubmit the roo?
@@ -75,23 +78,22 @@ class ModAction(BaseAction):
                                  "wrong comment. Read the sidebar for more information.")
         if comment_linked_wrong in self.issues:
             message_lines.append("your switcharoo is not linked to the correct roo. Did you remember to sort the "
-                                 "subreddit by new? The correct link is \n\n    {}\n\nCan you please change it to that? "
-                                 "Thanks!".format(last_submission["submission_url"]))
+                                 "subreddit by new? The correct link is \n\n    {}\n\nCan you please change it to "
+                                 "that? Thanks!".format(last_good_submission["url"]))
             resubmit = False
             action = WARN
         if comment_linked_bad_roo in self.issues:
             message_lines.append("your switcharoo links to a broken roo. Can you please change it to this link?\n\n"
-                                 "    {}\n\nThanks!".format(last_submission["submission_url"]))
+                                 "    {}\n\nThanks!".format(last_good_submission["url"]))
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:
-            message_lines.append("your switcharoo's link does not contain the `?context=x` suffix. It's likely this "
-                                 "isn't your fault and the roo'er before you did not add it to their link.\n\n"
-                                 "I've asked the mods to help out with determining how much context is needed but you "
-                                 "can also figure it out yourself if you'd like.\n\nGo to the switcharoo your comment "
-                                 "links to and count how many comments above it are needed to understand the joke. "
-                                 "Then, in the link in your comment, append `?context=x` to the end of the link, "
-                                 "replacing x with the number of levels you counted.")
+            message_lines.append("your switcharoo's link does not contain the `?context=x` suffix. It could be that"
+                                 "the roo'er previous to left it out but you could also have missed it in copying. "
+                                 "Go to the switcharoo your comment links to and count how many comments above it "
+                                 "are needed to understand the joke. Then, in the link in your comment, append "
+                                 "`?context=x` to the end of the link, replacing x with the number of levels you "
+                                 "counted.")
             resubmit = False
             action = WARN
             request_assistance = True
@@ -105,7 +107,7 @@ class ModAction(BaseAction):
             else:
                 reasons = ""
                 for i in message_lines:
-                    reasons = reasons + "* " + i[0].upper() + i[1:] + "\n"
+                    reasons = reasons + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
                 message = message + MS.delete_multiple_reason.format(reasons)
             if resubmit:
                 message = message + MS.resubmit_text
@@ -115,12 +117,19 @@ class ModAction(BaseAction):
                 message = message + MS.warn_single_reason.format(message_lines[0])
             else:
                 warnings = ""
+                for i in message_lines:
+                    warnings = warnings + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
+                message = message + MS.warn_multiple_reason.format(warnings)
         message = message + MS.footer
 
         print(message)
-        # print("Let's go for it!", action==DELETE)
-        # input()
-        # # Reply and delete (if that is what we are supposed to do)!
-        # submission.reply(message)
-        # if action == DELETE:
-        #     submission.mod.remove()
+        print("Replying and deleting if true", action == DELETE)
+        input()
+        # Reply and delete (if that is what we are supposed to do)!
+        comment = submission.reply(message)
+        comment.mod.distinguish()
+        if action == DELETE:
+            submission.mod.remove()
+        if request_assistance:
+            self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
+                                                        "{}".format(submission.url))
