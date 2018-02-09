@@ -19,15 +19,15 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 switcharoo = reddit.subreddit("switcharoo")
 
 # Create object to perform actions
-action = ModAction(reddit)
-# action = PrintAction(reddit)
+# action = ModAction(reddit)
+action = PrintAction(reddit)
 
 # Restore or make data for last check and last thread in switcharoo
 last_data = LastData()
 
 # UTC time of last post checked, used to find new posts
 # If not, we just start checking from this point forward
-last_check = last_data.get("last_check", time.time())
+last_check = last_data.get("last_check", time.time()-24*60*60*2)
 
 # Track last submissions in order to check for correct linking
 # and request corrections
@@ -41,7 +41,7 @@ def save_last_data(last_switcharoo, last_data):
     last_data.save()
 
 
-print("Ctrl+C to stop")
+print("SwitcharooHelper v{}".format(consts.version), "Ctrl+C to stop")
 
 try:
     while True:

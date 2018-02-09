@@ -34,13 +34,13 @@ class LastSwitcharoo:
         # Track the indicies to remove
         remove = []
         for i, roo in enumerate(self._good_roos):
-            submission = self.reddit.submission(url=roo["url"])
+            submission = self.reddit.submission(url=roo["submission_url"])
             try:
-                if hasattr(submission, "removed"):
+                if submission.author is None:
+                    remove.append(i)
+                elif hasattr(submission, "removed"):
                     if submission.removed:
                         remove.append(i)
-                    else:
-                        break
                 else:   # We only need one good submission to continue
                     break
             except prawcore.exceptions.BadRequest:  # Failed request also indicates removed post
@@ -52,11 +52,11 @@ class LastSwitcharoo:
         remove = []
         for i, roo in enumerate(self._last_roos):
             submission = self.reddit.submission(url=roo)
-            if hasattr(submission, "removed"):
+            if submission.author is None:
+                remove.append(i)
+            elif hasattr(submission, "removed"):
                 if submission.removed:
                     remove.append(i)
-                else:
-                    break
             else:  # We only need one good submission to continue
                 break
         for i in sorted(remove, reverse=True):  # Work backwards to avoid updating indexes
@@ -70,18 +70,20 @@ class LastSwitcharoo:
         :param comment_id: id of the switcharoo comment
         :return: 
         """
-        self._good_roos.insert(0, {"submission": submission, "url": "https://reddit.com{}".format(submission.url),
-                                   "thread_id": thread_id, "comment_id": comment_id})
+        self._good_roos.insert(0, {"submission": submission, "thread_id": thread_id, "comment_id": comment_id,
+                                   "url": submission.url,
+                                   "submission_url": "https://reddit.com{}".format(submission.permalink)})
+
         # Remove any excess roos
         if len(self._good_roos) > LIMIT:
-            del self._good_roos[LIMIT-1]
+            del self._good_roos[len(self._good_roos) - 1]
 
     def add_last(self, submission_url):
         self._last_roos.insert(0, submission_url)
 
         # Remove any excess roos
         if len(self._last_roos) > LIMIT:
-            del self._last_roos[LIMIT-1]
+            del self._last_roos[len(self._last_roos)-1]
 
     def last_good(self, index=0):
         if self._good_roos:
