@@ -70,7 +70,7 @@ class LastSwitcharoo:
         :param comment_id: id of the switcharoo comment
         :return: 
         """
-        self._good_roos.insert(0, {"submission": submission, "url": "https://reddit.com{}".format(submission.permalink),
+        self._good_roos.insert(0, {"submission": submission, "url": "https://reddit.com{}".format(submission.url),
                                    "thread_id": thread_id, "comment_id": comment_id})
         # Remove any excess roos
         if len(self._good_roos) > LIMIT:

@@ -32,6 +32,10 @@ def thread_url_to_id(url):
     else:
         comment_id = None
 
+    # Someone submitted a '.' as the comment id once ¯\_(ツ)_/¯
+    if len(comment_id) != 7:
+        comment_id = None
+
     return thread_id, comment_id
 
 

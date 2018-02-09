@@ -19,8 +19,8 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 switcharoo = reddit.subreddit("switcharoo")
 
 # Create object to perform actions
-# action = ModAction(reddit)
-action = PrintAction(reddit)
+action = ModAction(reddit)
+# action = PrintAction(reddit)
 
 # Restore or make data for last check and last thread in switcharoo
 last_data = LastData()

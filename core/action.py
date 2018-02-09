@@ -29,7 +29,7 @@ class BaseAction:
 
 
 class PrintAction(BaseAction):
-    def process(self, submission, last_submission=None):
+    def process(self, submission, last_good_submission=None):
         message_lines = []
         if submission_lacks_context in self.issues:
             message_lines.append("https://www.reddit.com{} submission link does not have ?context".format(
@@ -44,8 +44,11 @@ class PrintAction(BaseAction):
             message_lines.append("https://www.reddit.com{} has no link in the comment".format(
                 submission.permalink))
         if comment_linked_wrong in self.issues:
-            message_lines.append("https://www.reddit.com{} comment is not linked to the next level".format(
-                submission.permalink))
+            message_lines.append("https://www.reddit.com{} comment is not linked to the next level, {}".format(
+                submission.permalink, last_good_submission["url"]))
+        if comment_linked_bad_roo in self.issues:
+            message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not {}".format(
+                submission.permalink, last_good_submission["url"]))
         if comment_lacks_context in self.issues:
             message_lines.append("https://www.reddit.com{} comment is correct link but did not "
                                  "have ?context in it".format(submission.permalink))
@@ -124,7 +127,7 @@ class ModAction(BaseAction):
 
         print(message)
         print("Replying and deleting if true", action == DELETE)
-        input()
+        # input()
         # Reply and delete (if that is what we are supposed to do)!
         comment = submission.reply(message)
         comment.mod.distinguish()

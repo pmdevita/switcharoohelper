@@ -48,7 +48,7 @@ def process(reddit, submission, last_switcharoo, action):
     # If comment was deleted, this will make an error. The try alleviates that
     try:
         comment.refresh()
-    except praw.exceptions.ClientException:
+    except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
         action.add_issue(comment_deleted)
         action.act(submission, last_good_submission)
         return
