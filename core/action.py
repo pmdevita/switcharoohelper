@@ -52,6 +52,9 @@ class PrintAction(BaseAction):
         if comment_lacks_context in self.issues:
             message_lines.append("https://www.reddit.com{} comment is correct link but did not "
                                  "have ?context in it".format(submission.permalink))
+        if submission_multiple_params in self.issues:
+            message_lines.append("https://www.reddit.com{} had more than one param sections".format(
+                submission.permalink))
         for i in message_lines:
             print(" ", i)
 
@@ -100,6 +103,12 @@ class ModAction(BaseAction):
             resubmit = False
             action = WARN
             request_assistance = True
+        if submission_multiple_params in self.issues:
+            message_lines.append("your switcharoo had multiple '?' sections at the end of it. You can resubmit if you "
+                                 "delete everything after and including the '?' in your URL and then append "
+                                 "`?context=x` to the end of the URL. Don't forget to relink your switcharoo to the "
+                                 "newest switcharoo submission!")
+            resubmit = False
 
         # Assemble message
 
@@ -125,7 +134,7 @@ class ModAction(BaseAction):
                 message = message + MS.warn_multiple_reason.format(warnings)
         message = message + MS.footer
 
-        print(message)
+        #print(message)
         print("Replying and deleting if true", action == DELETE)
         # input()
         # Reply and delete (if that is what we are supposed to do)!

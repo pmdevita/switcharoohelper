@@ -27,6 +27,12 @@ def process(reddit, submission, last_switcharoo, action):
 
     print("Roo:", submission.title)
 
+    # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
+    if submission.url.count("?") > 1:
+        action.add_issue(submission_multiple_params)
+        action.act(submission)
+        return
+
     # Verify it contains ?context
     if "?context" not in submission.url:
         action.add_issue(submission_lacks_context)
@@ -34,15 +40,12 @@ def process(reddit, submission, last_switcharoo, action):
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)
 
-    # We'll need the last verified good switcharoo from here on
-    last_good_submission = last_switcharoo.last_good()
-
     # If there was a comment in the link, make the comment object
     if comment_id:
         comment = reddit.comment(comment_id)
     else:   # If there was no comment in the link, take action
         action.add_issue(submission_linked_thread)
-        action.act(submission, last_good_submission)
+        action.act(submission)
         return
 
     # If comment was deleted, this will make an error. The try alleviates that
@@ -50,7 +53,7 @@ def process(reddit, submission, last_switcharoo, action):
         comment.refresh()
     except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
         action.add_issue(comment_deleted)
-        action.act(submission, last_good_submission)
+        action.act(submission)
         return
 
     # Deleted comments sometimes don't generate errors
@@ -71,11 +74,14 @@ def process(reddit, submission, last_switcharoo, action):
         last_good_submission and yell at them for linking something that isn't a roo.
         """
         action.add_issue(comment_has_no_link)
-        action.act(submission, last_good_submission)
+        action.act(submission)
         return
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
     next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
+
+    # We'll need the last verified good switcharoo from here on
+    last_good_submission = last_switcharoo.last_good()
 
     # check if there is a last good submission to verify against
     if last_good_submission:

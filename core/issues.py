@@ -18,3 +18,6 @@ comment_lacks_context = 6
 
 # The switcharoo was correctly linked to a bad roo. Ask for edit to new one
 comment_linked_bad_roo = 7
+
+# The switcharoo tried to have multiple sections of url params (multiple '?')
+submission_multiple_params = 8
