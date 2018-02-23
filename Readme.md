@@ -4,15 +4,14 @@ Verifies new additions to the switcharoo chain are correctly linked and unbroken
 
 ## Setup/Running
 
-Create a file called `credentials.json` in the root directory of this project 
+Create a file called `credentials.ini` in the root directory of this project 
 and in it place the following:
-```json
-{
-  "client_id": "reddit api client id",
-  "client_secret": "reddit api client secret",
-  "username": "username of bot",
-  "password": "password of bot"
-}
+```ini
+[reddit]
+client_id = your-client-id
+client_secret = your-client-secret
+username = username-of-account
+password = password-of-account
 ```
 
 then run `main.py`.
@@ -46,6 +45,5 @@ If there is an issue with the comment (wrong link), the user is given the correc
 asked to fix the problem.
 
 ## To do
-* Switch config from json to configparser
 * Search for correct comment when linked incorrectly
 * Refactor and tidy up the place

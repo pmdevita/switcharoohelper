@@ -1,12 +1,10 @@
 import praw
 import time
 
-from credentials import get_credentials
-from core import process
+from core.credentials import get_credentials
+from core import process, LastData, LastSwitcharoo
 from core import constants as consts
 from core.action import PrintAction, ModAction
-from core.last_data import LastData
-from core.last_switcharoo import LastSwitcharoo
 
 credentials = get_credentials()
 
@@ -27,7 +25,7 @@ last_data = LastData()
 
 # UTC time of last post checked, used to find new posts
 # If not, we just start checking from this point forward
-last_check = last_data.get("last_check", time.time()-24*60*60*2)
+last_check = last_data.get("last_check", time.time()-24*60*60*9)
 
 # Track last submissions in order to check for correct linking
 # and request corrections
@@ -41,7 +39,7 @@ def save_last_data(last_switcharoo, last_data):
     last_data.save()
 
 
-print("SwitcharooHelper v{}".format(consts.version), "Ctrl+C to stop")
+print("SwitcharooHelper v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
 try:
     while True:

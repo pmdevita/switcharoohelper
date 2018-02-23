@@ -94,7 +94,7 @@ class ModAction(BaseAction):
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:
-            message_lines.append("your switcharoo's link does not contain the `?context=x` suffix. It could be that"
+            message_lines.append("your switcharoo's link does not contain the `?context=x` suffix. It could be that "
                                  "the roo'er previous to left it out but you could also have missed it in copying. "
                                  "Go to the switcharoo your comment links to and count how many comments above it "
                                  "are needed to understand the joke. Then, in the link in your comment, append "

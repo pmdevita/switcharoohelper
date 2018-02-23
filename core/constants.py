@@ -1,4 +1,4 @@
-version = "0.9.3"
+version = "0.9.6"
 user_agent = "SwitcharooHelper by /u/pmdevita v{}"
 sleep_time = 120
 sleep_time_test = 10
@@ -22,4 +22,4 @@ class ModActionStrings:
     warn_multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
     footer = "---\nI am a bot. I'm still new and may make mistakes. [Report an issue](https://www.reddit.com/message/" \
-             "compose?to=%2Fr%2Fswitcharoo&subject=Switcharoohelper%20Issue&message=)"
+             "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
