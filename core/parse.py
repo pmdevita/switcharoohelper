@@ -42,7 +42,6 @@ def thread_url_to_id(url):
 def parse_comment(text):
     """Get url from switcharoo comment"""
     matches = REPatterns.link.findall(text)
-    print(matches)
     if matches:
         if len(matches) > 1:    # Some subreddits add strange links and stuff
             for match in matches:   # usually they don't start with http

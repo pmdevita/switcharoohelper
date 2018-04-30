@@ -1,19 +1,32 @@
 import prawcore.exceptions
 
-LIMIT = 5   # Can't imagine I would delete
+LIMIT = 10
 
-"""
-The submission dictionary looks like this
-{"submission": praw submission object, "thread_id": reddit ID of thread switcharoo comment is in, 
-"comment_id": reddit ID of the comment containing the switcharoo, "url": url of the r/switcharoo submission}
-The submission is the submission to r/switcharoo and the comment is the 
-switcharoo comment it links to
-"""
+class Switcharoo:
+    def __init__(self, thread_id, comment_id, comment_url, submission_url, submission_id, submission=None):
+        self.thread_id = thread_id
+        self.comment_id = comment_id
+        self.comment_url = comment_url
+        self.submission_url = submission_url
+        self.submission = submission
+        self.submission_id = submission_id
+
+    """Support for deprecated access"""
+    def __getitem__(self, item):
+        self.__getattribute__(item)
 
 
-class LastSwitcharoo:
-    """Keeps a history of the last switcharoos, both good/verified and the last one
-    in general"""
+    def save(self):
+        return {"thread_id": self.thread_id, "comment_id": self.comment_id, "comment_url": self.comment_url,
+                "submission_url": self.submission_url, "submission_id": self.submission_id}
+
+def DictToSwitcharoo(properties):
+    return Switcharoo(properties["thread_id"], properties["comment_id"], properties["comment_url"],
+                      properties["submission_url"], properties["submission_id"])
+
+class SwitcharooLog:
+    """Keeps a log of the switcharoos, both good/verified and the last one
+    in general. Used to give correct links and to find place in submissions log"""
     def __init__(self, reddit, load=None):
         """
 
@@ -23,7 +36,9 @@ class LastSwitcharoo:
         self.reddit = reddit
 
         if load:
-            self._good_roos = load["good_roos"]
+            self._good_roos = []
+            for i in load["good_roos"]:
+                self._good_roos.append(DictToSwitcharoo(i))
             self._last_roos = load["last_roos"]
         else:
             self._good_roos = []
@@ -31,36 +46,89 @@ class LastSwitcharoo:
 
     def verify(self):
         """Check that if the last good or last submitted roo was deleted (by someone else), we don't link to it"""
-        # Track the indicies to remove
+        # Track the indices to remove
         remove = []
         for i, roo in enumerate(self._good_roos):
-            submission = self.reddit.submission(url=roo["submission_url"])
+            submission = self.reddit.submission(roo.submission_id)
             try:
                 if submission.author is None:
                     remove.append(i)
-                elif hasattr(submission, "removed"):
+                    continue
+                if submission.banned_by:
+                    if not submission.approved_by:
+                        remove.append(i)
+                        continue
+                if hasattr(submission, "removed"):
                     if submission.removed:
                         remove.append(i)
-                else:   # We only need one good submission to continue
-                    break
+                        continue
+                break   # This one passed the test, we are done here
             except prawcore.exceptions.BadRequest:  # Failed request also indicates removed post
                 remove.append(i)
 
         for i in sorted(remove, reverse=True):  # Work backwards to avoid updating indexes
             del self._good_roos[i]
 
-        remove = []
+        remove = []     # This may not be a good idea since a roo may have linked to a deleted one of these
         for i, roo in enumerate(self._last_roos):
             submission = self.reddit.submission(url=roo)
-            if submission.author is None:
+            try:
+                if submission.author is None:
+                    remove.append(i)
+                    continue
+                if submission.banned_by:
+                    if not submission.approved_by:
+                        remove.append(i)
+                        continue
+                if hasattr(submission, "removed"):
+                    if submission.removed:
+                        remove.append(i)
+                        continue
+                break   # This one passed the test, we are done here
+            except prawcore.exceptions.BadRequest:  # Failed request also indicates removed post
                 remove.append(i)
+
+        for i in sorted(remove, reverse=True):  # Work backwards to avoid updating indexes
+            del self._last_roos[i]
+
+    def verify_settled(self):
+        """Verify roos for linking on the tail of the roo log. We need at least one good one for linking to"""
+        # Track the indicies to remove
+        remove = []
+        for i, roo in enumerate(reversed(self._good_roos)):
+            # reverse the index since we are reading backwards
+            index = len(self._good_roos) - 1 - i
+            submission = self.reddit.submission(url=roo["submission_url"])
+            try:
+                if submission.author is None:
+                    remove.append(index)
+                elif hasattr(submission, "removed"):
+                    if submission.removed:
+                        remove.append(index)
+                else:  # We only need one good submission to continue
+                    break
+            except prawcore.exceptions.BadRequest:  # Failed request also indicates removed post
+                remove.append(index)
+
+        for i in sorted(remove, reverse=True):  # Work backwards to avoid updating indexes
+            del self._good_roos[index]
+
+        remove = []
+        for i, roo in enumerate(reversed(self._last_roos)):
+            # reverse the index since we are reading backwards
+            index = len(self._good_roos) - 1 - i
+            submission = self.reddit.submission(url=roo)
+            if submission.author is None:
+                remove.append(index)
             elif hasattr(submission, "removed"):
                 if submission.removed:
-                    remove.append(i)
+                    remove.append(index)
             else:  # We only need one good submission to continue
                 break
         for i in sorted(remove, reverse=True):  # Work backwards to avoid updating indexes
-            del self._last_roos[i]
+            del self._last_roos[index]
+
+
 
     def add_good(self, submission, thread_id, comment_id):
         """
@@ -70,9 +138,9 @@ class LastSwitcharoo:
         :param comment_id: id of the switcharoo comment
         :return: 
         """
-        self._good_roos.insert(0, {"submission": submission, "thread_id": thread_id, "comment_id": comment_id,
-                                   "url": submission.url,
-                                   "submission_url": "https://reddit.com{}".format(submission.permalink)})
+        self._good_roos.insert(0, Switcharoo(thread_id, comment_id, submission.url,
+                                             "https://reddit.com{}".format(submission.permalink), submission.id,
+                                             submission))
 
         # Remove any excess roos
         if len(self._good_roos) > LIMIT:
@@ -99,8 +167,7 @@ class LastSwitcharoo:
 
     def save(self):
         """Returns object ready for jsonification"""
-        good_roos = self._good_roos[:]
-        last_roos = self._last_roos[:]
-        for i in good_roos:
-            i.pop("submission", None)
-        return {"good_roos": good_roos, "last_roos": last_roos}
+        good_roos = []
+        for i in self._good_roos:
+            good_roos.append(i.save())
+        return {"good_roos": good_roos, "last_roos": self._last_roos}

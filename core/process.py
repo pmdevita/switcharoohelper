@@ -87,8 +87,8 @@ def process(reddit, submission, last_switcharoo, action):
     if last_good_submission:
 
         # Is this switcharoo comment linked to the last good switcharoo?
-        if next_thread_id == last_good_submission["thread_id"] and \
-                        next_comment_id == last_good_submission["comment_id"]:
+        if next_thread_id == last_good_submission.thread_id and \
+                        next_comment_id == last_good_submission.comment_id:
             # Woohoo! Linked to correct comment. Now check for ?context
             if "?context" not in comment_link:
                 action.add_issue(comment_lacks_context)

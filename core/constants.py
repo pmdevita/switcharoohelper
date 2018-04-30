@@ -1,7 +1,8 @@
-version = "0.9.6"
+version = "1.0"
 user_agent = "SwitcharooHelper by /u/pmdevita v{}"
 sleep_time = 120
 sleep_time_test = 10
+settled_check = 60 * 60 * 24 * 4
 
 
 class ModActionStrings:
