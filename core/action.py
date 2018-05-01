@@ -85,12 +85,12 @@ class ModAction(BaseAction):
         if comment_linked_wrong in self.issues:
             message_lines.append("your switcharoo is not linked to the correct roo. Did you remember to sort the "
                                  "subreddit by new? The correct link is \n\n    {}\n\nCan you please change it to "
-                                 "that? Thanks!".format(last_good_submission["url"]))
+                                 "that? Thanks!".format(last_good_submission.comment_url))
             resubmit = False
             action = WARN
         if comment_linked_bad_roo in self.issues:
             message_lines.append("your switcharoo links to a broken roo. Can you please change it to this link?\n\n"
-                                 "    {}\n\nThanks!".format(last_good_submission["url"]))
+                                 "    {}\n\nThanks!".format(last_good_submission.comment_url))
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:

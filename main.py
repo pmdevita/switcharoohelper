@@ -50,7 +50,7 @@ try:
         last_check = last_switcharoo.last_good()
         # If there is not one, grab the second newest submission (so that we start with the next, the newest)
         if not last_check:
-            last_check = get_newest_id(switcharoo, 30)
+            last_check = get_newest_id(switcharoo, 1)
 
         submissions = []
         for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)}):

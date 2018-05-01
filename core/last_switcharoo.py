@@ -15,6 +15,8 @@ class Switcharoo:
     def __getitem__(self, item):
         self.__getattribute__(item)
 
+    def __str__(self):
+        return self.submission_id
 
     def save(self):
         return {"thread_id": self.thread_id, "comment_id": self.comment_id, "comment_url": self.comment_url,
