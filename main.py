@@ -1,6 +1,8 @@
 import praw
 import time
 
+import prawcore.exceptions
+
 from core.credentials import get_credentials
 from core import process, LastData, SwitcharooLog
 from core import constants as consts
@@ -42,8 +44,8 @@ def save_last_data(last_data, last_switcharoo):
 
 print("SwitcharooHelper v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
-try:
-    while True:
+while True:
+    try:
         # Update the switcharoo log for any deleted posts
         last_switcharoo.verify()
         # Then grab the newest's submission ID
@@ -65,13 +67,16 @@ try:
             for submission in submissions:
                 process(reddit, submission, last_switcharoo, action)
                 action.reset()
-                # Add this submission's url to the tracker
-                last_switcharoo.add_last(submission.url)
 
             print("Checked up to", submissions[len(submissions) - 1].id)
             save_last_data(last_data, last_switcharoo)
 
         time.sleep(consts.sleep_time)
 
-except KeyboardInterrupt:
-    print("\nExiting...")
+    except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
+        print("Unable to connect to Reddit, is the internet down?")
+        time.sleep(consts.sleep_time * 2)
+
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        break

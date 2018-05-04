@@ -27,6 +27,9 @@ def process(reddit, submission, last_switcharoo, action):
 
     print("Roo:", submission.title)
 
+    # It's a roo, add it to the list of all roos
+    last_switcharoo.add_last(submission.url)
+
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:
         action.add_issue(submission_multiple_params)
