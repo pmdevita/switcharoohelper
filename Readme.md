@@ -43,7 +43,3 @@ again if they wish.
 
 If there is an issue with the comment (wrong link), the user is given the correct link and 
 asked to fix the problem.
-
-## To do
-* Search for correct comment when linked incorrectly
-* Refactor and tidy up the place

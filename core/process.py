@@ -40,6 +40,10 @@ def process(reddit, submission, last_switcharoo, action):
     if "?context" not in submission.url:
         action.add_issue(submission_lacks_context)
 
+    # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
+    if "/" in submission.url[submission.url.index("?"):]:
+        action.add_issue(submission_link_final_slash)
+
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)
 

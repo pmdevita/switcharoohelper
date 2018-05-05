@@ -21,3 +21,6 @@ comment_linked_bad_roo = 7
 
 # The switcharoo tried to have multiple sections of url params (multiple '?')
 submission_multiple_params = 8
+
+# The switcharoo had a slash at the end of the params
+submission_link_final_slash = 9

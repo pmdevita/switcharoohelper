@@ -55,6 +55,9 @@ class PrintAction(BaseAction):
         if submission_multiple_params in self.issues:
             message_lines.append("https://www.reddit.com{} had more than one param sections".format(
                 submission.permalink))
+        if submission_link_final_slash in self.issues:
+            message_lines.append("https://www.reddit.com{} had a trailing slash at the end".format(
+                submission.permalink))
         for i in message_lines:
             print(" ", i)
 
@@ -84,13 +87,13 @@ class ModAction(BaseAction):
                                  "wrong comment. Read the sidebar for more information.")
         if comment_linked_wrong in self.issues:
             message_lines.append("your switcharoo is not linked to the correct roo. Did you remember to sort the "
-                                 "subreddit by new? The correct link is \n\n    {}\n\nCan you please change it to "
+                                 "subreddit by new? The correct link is \n\n{}\n\nCan you please change it to "
                                  "that? Thanks!".format(last_good_submission.comment_url))
             resubmit = False
             action = WARN
         if comment_linked_bad_roo in self.issues:
             message_lines.append("your switcharoo links to a broken roo. Can you please change it to this link?\n\n"
-                                 "    {}\n\nThanks!".format(last_good_submission.comment_url))
+                                 "{}\n\nThanks!".format(last_good_submission.comment_url))
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:
@@ -107,6 +110,12 @@ class ModAction(BaseAction):
             message_lines.append("your switcharoo had multiple '?' sections at the end of it. You can resubmit if you "
                                  "delete everything after and including the '?' in your URL and then append "
                                  "`?context=x` to the end of the URL. Don't forget to relink your switcharoo to the "
+                                 "newest switcharoo submission!")
+            resubmit = False
+        if submission_link_final_slash in self.issues:
+            message_lines.append("your switcharoo had a trailing slash (\"/\") at the end of it. This causes the "
+                                 "`?context=x` property to not work. You can resubmit if you delete the slash(es) "
+                                 "at the end of the URL. Don't forget to relink your switcharoo to the "
                                  "newest switcharoo submission!")
             resubmit = False
 
