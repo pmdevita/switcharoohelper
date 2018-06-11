@@ -22,7 +22,7 @@ def process(reddit, submission, last_switcharoo, action):
         return
 
     # Verify it is a link to a reddit thread
-    if submission.domain != "reddit.com":
+    if submission.domain[-10:] != "reddit.com":
         return
 
     print("Roo:", submission.title)

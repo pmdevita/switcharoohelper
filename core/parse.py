@@ -29,11 +29,12 @@ def thread_url_to_id(url):
 
         # Remove any extra URL parameters
         comment_id = comment_id.split("?")[0]
-    else:
-        comment_id = None
 
-    # Someone submitted a '.' as the comment id once ¯\_(ツ)_/¯
-    if len(comment_id) != 7:
+        # Someone submitted a '.' as the comment id once ¯\_(ツ)_/¯
+        if len(comment_id) != 7:
+            comment_id = None
+
+    else:
         comment_id = None
 
     return thread_id, comment_id

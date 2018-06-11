@@ -77,6 +77,10 @@ while True:
         print("Unable to connect to Reddit, is the internet down?")
         time.sleep(consts.sleep_time * 2)
 
+    except prawcore.exceptions.ResponseException as e:
+        print("weird other exceptions?", e)
+        time.sleep(consts.sleep_time * 2)
+
     except KeyboardInterrupt:
         print("\nExiting...")
         break
