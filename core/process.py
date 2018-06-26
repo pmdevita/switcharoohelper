@@ -20,9 +20,12 @@ def process(reddit, submission, last_switcharoo, action):
     # Verify it is a link post (not a self post)
     if submission.is_self:
         return
-
-    # Verify it is a link to a reddit thread
+		
+	# Verify it is a link to a reddit thread
+	# If not, assume it's a faulty submission and delete.
     if submission.domain[-10:] != "reddit.com":
+		action.add_issue(submission_not_reddit)
+        action.act(submission)
         return
 
     print("Roo:", submission.title)

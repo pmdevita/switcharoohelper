@@ -24,3 +24,6 @@ submission_multiple_params = 8
 
 # The switcharoo had a slash at the end of the params
 submission_link_final_slash = 9
+
+# The submission links outside of reddit
+submission_not_reddit = 10
