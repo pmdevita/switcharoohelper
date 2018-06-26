@@ -58,8 +58,8 @@ class PrintAction(BaseAction):
         if submission_link_final_slash in self.issues:
             message_lines.append("https://www.reddit.com{} had a trailing slash at the end".format(
                 submission.permalink))
-		if submission_not_reddit in self.issues:
-			message_lines.append("https://www.reddit.com{} is not a reddit link.".format(
+        if submission_not_reddit in self.issues:
+            message_lines.append("https://www.reddit.com{} is not a reddit link.".format(
                 submission.permalink))
         for i in message_lines:
             print(" ", i)
@@ -121,10 +121,10 @@ class ModAction(BaseAction):
                                  "at the end of the URL. Don't forget to relink your switcharoo to the "
                                  "newest switcharoo submission!")
             resubmit = False
-		if submission_not_reddit in self.issues:
-			message_lines.append("the link leads outside of reddit. Did you mean to submit a meta "
-								 "post? Read the sidebar for more information.")
-			resubmit = False
+        if submission_not_reddit in self.issues:
+            message_lines.append("the link leads outside of reddit. Did you mean to submit a meta "
+                                 "post? Read the sidebar for more information.")
+            resubmit = False
 
         # Assemble message
 
