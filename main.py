@@ -4,7 +4,7 @@ import time
 import prawcore.exceptions
 
 from core.credentials import get_credentials
-from core import process, LastData, SwitcharooLog
+from core import process, LastData, SwitcharooLog, OldSwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
 
@@ -30,7 +30,7 @@ last_data = LastData()
 # LastSwitcharoo also keeps track of switcharoos so we can do a final settling a few days later (after things get
 #   removed and moderators shift things around)
 last_switcharoo = SwitcharooLog(reddit, last_data.get("last_switcharoo", None))
-
+old_last_switcharoo = OldSwitcharooLog(last_switcharoo)
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
@@ -70,6 +70,25 @@ while True:
 
             print("Checked up to", submissions[len(submissions) - 1].id)
             save_last_data(last_data, last_switcharoo)
+
+        # Old roo check
+        # Not best design, could use some rewriting
+        if last_switcharoo.old_time < time.time() and False:
+            print("Revising old submissions...")
+            for i, old_submission in enumerate(reversed(last_switcharoo.old_roos)):
+                if hasattr(old_submission, "submission"):
+                    submission = old_submission.submission
+                else:
+                    submission = reddit.submission(old_submission.submission_id)
+                if submission.created_utc + consts.settled_check < time.time():
+                    process(reddit, submission, old_last_switcharoo, PrintAction(reddit))
+                else:
+                    last_switcharoo.old_time = submission.created_utc + consts.settled_check
+                    for j in range(i):
+                        del last_switcharoo.good_roos[len(last_switcharoo.good_roos) - 1]
+                    break
+            save_last_data(last_data, last_switcharoo)
+
 
         time.sleep(consts.sleep_time)
 
