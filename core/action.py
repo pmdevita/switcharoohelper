@@ -61,6 +61,9 @@ class PrintAction(BaseAction):
         if submission_not_reddit in self.issues:
             message_lines.append("https://www.reddit.com{} is not a reddit link.".format(
                 submission.permalink))
+        if submission_is_meta in self.issues:
+            message_lines.append("https://www.reddit.com{} is a meta post switcharoo".format(
+                submission.permalink))
         for i in message_lines:
             print(" ", i)
 
@@ -125,35 +128,61 @@ class ModAction(BaseAction):
             message_lines.append("the link leads outside of reddit. Did you mean to submit a meta "
                                  "post? Read the sidebar for more information.")
             resubmit = False
+        if submission_is_meta in self.issues:
+            message_lines.append("your post appears to be a ")
 
-        # Assemble message
+
+        # Choose template based on action
+        if action == DELETE:
+            reason = MS.delete_single_reason
+            multi_reason = MS.delete_multiple_reason
+        elif action == WARN:
+            reason = MS.warn_single_reason
+            multi_reason = MS.warn_multiple_reason
 
         message = MS.header.format(["Hi!", "Hey!", "Howdy!", "Hello!"][randrange(4)])
-        if action == DELETE:
-            if len(message_lines) == 1:
-                message = message + MS.delete_single_reason.format(message_lines[0])
-            else:
-                reasons = ""
-                for i in message_lines:
-                    reasons = reasons + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
-                message = message + MS.delete_multiple_reason.format(reasons)
-            if resubmit:
-                message = message + MS.resubmit_text
 
-        elif action == WARN:
-            if len(message_lines) == 1:
-                message = message + MS.warn_single_reason.format(message_lines[0])
-            else:
-                warnings = ""
-                for i in message_lines:
-                    warnings = warnings + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
-                message = message + MS.warn_multiple_reason.format(warnings)
+        # Assemble message
+        if len(message_lines) == 1:
+            message = message + reason.format(message_lines[0])
+        else:
+            reasons = ""
+            for i in message_lines:
+                reasons = reasons + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
+            message = message + multi_reason.format(reasons)
+        if action == DELETE and resubmit:
+            message = message + MS.resubmit_text.format("issue" if len(message_lines) == 1 else "issues")
+
+
+        # if action == DELETE:
+        #     if len(message_lines) == 1:
+        #         message = message + MS.delete_single_reason.format(message_lines[0])
+        #     else:
+        #         reasons = ""
+        #         for i in message_lines:
+        #             reasons = reasons + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
+        #         message = message + MS.delete_multiple_reason.format(reasons)
+        #     if resubmit:
+        #         message = message + MS.resubmit_text
+        #
+        # elif action == WARN:
+        #     if len(message_lines) == 1:
+        #         message = message + MS.warn_single_reason.format(message_lines[0])
+        #     else:
+        #         warnings = ""
+        #         for i in message_lines:
+        #             warnings = warnings + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
+        #         message = message + MS.warn_multiple_reason.format(warnings)
+
         message = message + MS.footer
 
-        #print(message)
+        # print(message)
         print("Replying and deleting if true", action == DELETE)
         # input()
         # Reply and delete (if that is what we are supposed to do)!
+
+        # return
+
         comment = submission.reply(message)
         comment.mod.distinguish()
         if action == DELETE:

@@ -7,7 +7,8 @@ Provides different methods to parse Reddit data
 class REPatterns:
     # returns the URL from a Reddit embedded hyperlink
     link = re.compile("\[.*?\] *\n? *\((.*?)\)")
-    reddit_thread = re.compile("https?:\/\/(.*?\.|)reddit.com\/r\/.*?\/comments\/(?P<thread_id>.{6})\/.*?\/(?P<comment_id>.{7})")
+    reddit_thread = re.compile("(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
+    wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
 def thread_url_to_id(url):
     """
@@ -61,3 +62,11 @@ def parse_comment(text):
                 return i
     return None
 
+def only_reddit_url(text):
+    """Determines if text is only a reddit URL. Used for finding incorrectly made
+    meta posts"""
+    match = REPatterns.wrongly_meta.match(text)
+    if match:
+        return True
+    else:
+        return False

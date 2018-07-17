@@ -19,6 +19,10 @@ def process(reddit, submission, last_switcharoo, action):
 
     # Verify it is a link post (not a self post)
     if submission.is_self:
+        # If meta, determine if it was incorrectly submitted as meta
+        if parse.only_reddit_url(submission.selftext):
+            action.add_issue(submission_is_meta)
+            action.act(submission)
         return
         
     # Verify it is a link to a reddit thread
@@ -33,7 +37,7 @@ def process(reddit, submission, last_switcharoo, action):
     # It's a roo, add it to the list of all roos
     last_switcharoo.add_last(submission.url)
 
-    # Following done better with regex?
+    # Redo next three checks with regex
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:

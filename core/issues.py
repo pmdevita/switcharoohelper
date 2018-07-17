@@ -27,3 +27,9 @@ submission_link_final_slash = 9
 
 # The submission links outside of reddit
 submission_not_reddit = 10
+
+# The submission is a meta post when it should have been a link
+submission_is_meta = 11
+
+# The submission has linked the post on r/switcharoo, not the link
+submission_linked_post = 12
