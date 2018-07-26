@@ -33,6 +33,8 @@ class Switcharoo:
         return {"thread_id": self.thread_id, "comment_id": self.comment_id, "comment_url": self.comment_url,
                 "submission_url": self.submission_url, "submission_id": self.submission_id}
 
+# TODO: Create a SwitcharooLog class and derive the New and Settled versions from it
+
 class SwitcharooLog:
     """Keeps a log of the switcharoos, both good/verified and the last one
     in general. Used to give correct links and to find place in submissions log"""
@@ -169,7 +171,7 @@ class SwitcharooLog:
 
         # Move old roos to old_roos and remove from good_roos
         if len(self.good_roos) > LIMIT:
-            # self.old_roos.insert(0, self.good_roos[len(self.good_roos) - 1])
+            self.old_roos.insert(0, self.good_roos[len(self.good_roos) - 1])
             del self.good_roos[len(self.good_roos) - 1]
 
     def add_last(self, submission_url):

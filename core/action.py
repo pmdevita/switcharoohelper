@@ -84,9 +84,12 @@ class ModAction(BaseAction):
             message_lines.append("the link to your switcharoo does not contain the `?context=x` suffix. Read "
                                  "the sidebar for more information.")
         if submission_linked_thread in self.issues:
-            message_lines.append("your post's link is to a Reddit thread, not a comment permalink.")
+            message_lines.append("your post's link is to a Reddit thread, not a comment permalink. Make sure to "
+                                 "click the permalink button on the comment (or on mobile, grab the link to the "
+                                 "comment).")
         if comment_deleted in self.issues:
-            message_lines.append("your switcharoo comment was deleted.")
+            message_lines.append("your switcharoo comment was deleted. If you think it was that subreddit's "
+                                 "moderators, please let us know so we can add it to the forbidden subs list.")
             resubmit = False
         if comment_has_no_link in self.issues:
             message_lines.append("your submission does not link to a switcharoo. It's very likely you linked the "
@@ -129,7 +132,8 @@ class ModAction(BaseAction):
                                  "post? Read the sidebar for more information.")
             resubmit = False
         if submission_is_meta in self.issues:
-            message_lines.append("your post appears to be a ")
+            message_lines.append("your post appears to be a roo submitted as a text post. All switcharoos should be "
+                                 "submitted as link posts for clarity and subreddit organization.")
 
 
         # Choose template based on action
@@ -152,27 +156,6 @@ class ModAction(BaseAction):
             message = message + multi_reason.format(reasons)
         if action == DELETE and resubmit:
             message = message + MS.resubmit_text.format("issue" if len(message_lines) == 1 else "issues")
-
-
-        # if action == DELETE:
-        #     if len(message_lines) == 1:
-        #         message = message + MS.delete_single_reason.format(message_lines[0])
-        #     else:
-        #         reasons = ""
-        #         for i in message_lines:
-        #             reasons = reasons + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
-        #         message = message + MS.delete_multiple_reason.format(reasons)
-        #     if resubmit:
-        #         message = message + MS.resubmit_text
-        #
-        # elif action == WARN:
-        #     if len(message_lines) == 1:
-        #         message = message + MS.warn_single_reason.format(message_lines[0])
-        #     else:
-        #         warnings = ""
-        #         for i in message_lines:
-        #             warnings = warnings + "* {}{}{}".format(i[0].upper(), i[1:], "\n")
-        #         message = message + MS.warn_multiple_reason.format(warnings)
 
         message = message + MS.footer
 
