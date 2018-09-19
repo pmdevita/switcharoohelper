@@ -19,16 +19,25 @@ def process(reddit, submission, last_switcharoo, action):
 
     # Verify it is a link post (not a self post)
     if submission.is_self:
+        # If meta, determine if it was incorrectly submitted as meta
+        if parse.only_reddit_url(submission.selftext):
+            action.add_issue(submission_is_meta)
+            action.act(submission)
         return
-
+        
     # Verify it is a link to a reddit thread
+    # If not, assume it's a faulty submission and delete.
     if submission.domain[-10:] != "reddit.com":
+        action.add_issue(submission_not_reddit)
+        action.act(submission)
         return
 
     print("Roo:", submission.title)
 
     # It's a roo, add it to the list of all roos
     last_switcharoo.add_last(submission.url)
+
+    # Redo next three checks with regex
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:
@@ -102,8 +111,7 @@ def process(reddit, submission, last_switcharoo, action):
             else:
                 print("  Linked correctly to next level in roo")
         else:
-            # Was this linked correctly linked to the last thread and it wasn't good or
-            # was this linked to something else?
+            # Was this linked correctly linked to pre-existing roo?
             last_thread_id, last_comment_id = parse.thread_url_to_id(last_switcharoo.last_submitted())
             if next_thread_id == last_thread_id and next_comment_id == last_comment_id:
                 # User correctly linked, the roo was just bad
@@ -119,3 +127,6 @@ def process(reddit, submission, last_switcharoo, action):
     last_switcharoo.add_good(submission, thread_id, comment_id)
 
     return
+
+def process_old(switcharoo):
+    pass
