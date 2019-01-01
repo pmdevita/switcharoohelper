@@ -24,7 +24,11 @@ def process(reddit, submission, last_switcharoo, action):
             action.add_issue(submission_is_meta)
             action.act(submission)
         return
-        
+
+    # Ignore announcements
+    if submission.distinguished:
+        return
+
     # Verify it is a link to a reddit thread
     # If not, assume it's a faulty submission and delete.
     if submission.domain[-10:] != "reddit.com":
@@ -50,8 +54,9 @@ def process(reddit, submission, last_switcharoo, action):
         action.add_issue(submission_lacks_context)
 
     # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
-    if "/" in submission.url[submission.url.index("?"):]:
-        action.add_issue(submission_link_final_slash)
+    if submission.url.count("?"):
+        if "/" in submission.url[submission.url.index("?"):]:
+            action.add_issue(submission_link_final_slash)
 
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)

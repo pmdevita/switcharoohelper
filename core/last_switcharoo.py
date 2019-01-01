@@ -3,6 +3,8 @@ import prawcore.exceptions
 """
 Switcharoos "graduate" out of the good roo log and into the old roo log. 
 This allows us to track data on them for future responses.
+
+Would a database be better?
 """
 
 LIMIT = 10

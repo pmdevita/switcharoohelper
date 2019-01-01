@@ -106,7 +106,7 @@ class ModAction(BaseAction):
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:
-            message_lines.append("the roo you have linked to is missing a `?context=x` suffix. Most likely, "
+            message_lines.append("the roo you have **linked to in your comment** (not the URL you have submitted) is missing a `?context=x` suffix. Most likely, "
                                  "the roo'er previous to you left it out but it's possible you missed it in copying "
                                  "their link.\n\nGo to the switcharoo your comment links to and count how many "
                                  "comments above it are needed to understand the joke. Then, in the link in your "
