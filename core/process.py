@@ -20,9 +20,10 @@ def process(reddit, submission, last_switcharoo, action):
     # Verify it is a link post (not a self post)
     if submission.is_self:
         # If meta, determine if it was incorrectly submitted as meta
-        if parse.only_reddit_url(submission.selftext):
-            action.add_issue(submission_is_meta)
-            action.act(submission)
+        if not parse.is_meta_title(submission.title):
+            if parse.only_reddit_url(submission.selftext):
+                action.add_issue(submission_is_meta)
+                action.act(submission)
         return
 
     # Ignore announcements

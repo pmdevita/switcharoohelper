@@ -11,8 +11,9 @@ class REPatterns:
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
     reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/\w+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?$")
-    reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/\w+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?")
+    reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/[\w%]+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?")
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
+
 
 def thread_url_to_id(url):
     """
@@ -66,15 +67,24 @@ def parse_comment(text):
                 return i
     return None
 
+
+def is_meta_title(title):
+    return "meta" in title.lower() and "vs" not in title.lower()
+
+
 def only_reddit_url(text):
     """Determines if text is only a reddit URL. Used for finding incorrectly made
     meta posts"""
-    match = REPatterns.reddit_detect.match(text)
-    if match:
-        return True
-
     total_len = len(text)
     threshold = 15
+
+    # match = REPatterns.reddit_detect.match(text)
+    # if match:
+    #     total_len - match.end() - match.start()
+    #     if total_len < threshold:
+    #         return True
+    #
+
 
     # If it is an embedded link
     link = REPatterns.link.findall(text)
@@ -103,3 +113,7 @@ def only_reddit_url(text):
             return True
 
     return False
+
+
+if __name__ == '__main__':
+    print(is_meta_title("[Meta] broken link"))

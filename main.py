@@ -3,12 +3,13 @@ import time
 
 import prawcore.exceptions
 
-from core.credentials import get_credentials
-from core import process, LastData, SwitcharooLog, OldSwitcharooLog
+from core.credentials import get_credentials, CredentialsLoader
+from core import process
+from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
 
-credentials = get_credentials()
+credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],
@@ -24,22 +25,23 @@ action = ModAction(reddit)
 settled_action = PrintAction(reddit)
 
 # LastData keeps track of data from the last time the helper was run so we can restore state
-last_data = LastData()
+# last_data = LastData()
 
 # LastSwitcharoo keeps a log of all switcharoos, used to help users relink their roo
 # LastSwitcharoo also keeps track of switcharoos so we can do a final settling a few days later (after things get
 #   removed and moderators shift things around)
-last_switcharoo = SwitcharooLog(reddit, last_data.get("last_switcharoo", None))
-old_last_switcharoo = OldSwitcharooLog(last_switcharoo)
+# last_switcharoo = SwitcharooLog(reddit, last_data.get("last_switcharoo", None))
+# old_last_switcharoo = OldSwitcharooLog(last_switcharoo)
+last_switcharoo = SwitcharooLog(reddit)
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
     return [i for i in subreddit.new(params={"limit": "1"})][index].id
 
 # Save last_data to file
-def save_last_data(last_data, last_switcharoo):
-    last_data.data["last_switcharoo"] = last_switcharoo.save()
-    last_data.save()
+# def save_last_data(last_data, last_switcharoo):
+#     last_data.data["last_switcharoo"] = last_switcharoo.save()
+#     last_data.save()
 
 
 print("SwitcharooHelper v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
