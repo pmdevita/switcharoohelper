@@ -20,8 +20,8 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 switcharoo = reddit.subreddit("switcharoo")
 
 # Action object tracks switcharoo and performs a final action (delete/comment)
-action = ModAction(reddit)
-# action = PrintAction(reddit)
+# action = ModAction(reddit)
+action = PrintAction(reddit)
 settled_action = PrintAction(reddit)
 
 # LastData keeps track of data from the last time the helper was run so we can restore state
@@ -33,6 +33,7 @@ settled_action = PrintAction(reddit)
 # last_switcharoo = SwitcharooLog(reddit, last_data.get("last_switcharoo", None))
 # old_last_switcharoo = OldSwitcharooLog(last_switcharoo)
 last_switcharoo = SwitcharooLog(reddit)
+last_switcharoo.sync_issues()
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
@@ -51,10 +52,12 @@ while True:
         # Update the switcharoo log for any deleted posts
         last_switcharoo.verify()
         # Then grab the newest's submission ID
-        last_check = last_switcharoo.last_good()
+        last_check = last_switcharoo.last_submission()
         # If there is not one, grab the second newest submission (so that we start with the next, the newest)
-        if not last_check:
-            last_check = get_newest_id(switcharoo, 1)
+        if last_check:
+            last_check = last_check.submission_id
+        else:
+            last_check = get_newest_id(switcharoo, 50)
 
         submissions = []
         for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)}):
@@ -71,25 +74,25 @@ while True:
                 action.reset()
 
             print("Checked up to", submissions[len(submissions) - 1].id)
-            save_last_data(last_data, last_switcharoo)
+            # save_last_data(last_data, last_switcharoo)
 
         # Old roo check
         # Not best design, could use some rewriting
-        if last_switcharoo.old_time < time.time() and False:
-            print("Revising old submissions...")
-            for i, old_submission in enumerate(reversed(last_switcharoo.old_roos)):
-                if hasattr(old_submission, "submission"):
-                    submission = old_submission.submission
-                else:
-                    submission = reddit.submission(old_submission.submission_id)
-                if submission.created_utc + consts.settled_check < time.time():
-                    process(reddit, submission, old_last_switcharoo, settled_action)
-                else:
-                    last_switcharoo.old_time = submission.created_utc + consts.settled_check
-                    for j in range(i):
-                        del last_switcharoo.good_roos[len(last_switcharoo.good_roos) - 1]
-                    break
-            save_last_data(last_data, last_switcharoo)
+        # if last_switcharoo.old_time < time.time() and False:
+        #     print("Revising old submissions...")
+        #     for i, old_submission in enumerate(reversed(last_switcharoo.old_roos)):
+        #         if hasattr(old_submission, "submission"):
+        #             submission = old_submission.submission
+        #         else:
+        #             submission = reddit.submission(old_submission.submission_id)
+        #         if submission.created_utc + consts.settled_check < time.time():
+        #             process(reddit, submission, old_last_switcharoo, settled_action)
+        #         else:
+        #             last_switcharoo.old_time = submission.created_utc + consts.settled_check
+        #             for j in range(i):
+        #                 del last_switcharoo.good_roos[len(last_switcharoo.good_roos) - 1]
+        #             break
+        #     save_last_data(last_data, last_switcharoo)
 
 
         time.sleep(consts.sleep_time)

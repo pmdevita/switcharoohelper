@@ -1,8 +1,12 @@
 from datetime import date
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug
 from core.credentials import CredentialsLoader
-from core.issues import issues, issues_dict
+from core.issues import issues_list, GetIssues
+import praw
+import prawcore.exceptions
 import random, string
+
+issues_obj = GetIssues.get()
 
 db = Database()
 
@@ -24,18 +28,20 @@ def bind_db(db):
 
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
-    thread_id = Required(str)
-    comment_id = Required(str)
-    context = Required(int)
     submission_id = Required(str)
+    thread_id = Optional(str)
+    comment_id = Optional(str)
+    context = Optional(int)
     issues = Set('Issues')
 
     def _link_reddit(self, reddit):
         self.reddit = reddit
+        self._submission = None
+        self._comment = None
 
     @property
     def submission(self):
-        if not self.submission:
+        if not self._submission:
             self._submission = self.reddit.submission(self.submission_id)
         return self._submission
 
@@ -65,18 +71,54 @@ class SwitcharooLog:
         """Give DB entity a reference to the Reddit object"""
         roo._link_reddit(self.reddit)
 
-    def add(self, submission_id, thread_id, comment_id, context, roo_issues):
+    def _params_without_none(self, **kwargs):
+        base_params = kwargs
+        params = {}
+        for key in base_params:
+            if base_params[key] is not None:
+                params[key] = base_params[key]
+        return params
+
+    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[]):
+        params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
+                                           context=context)
+
         with db_session:
-            n = Switcharoo(thread_id=thread_id, comment_id=comment_id, context=context,
-                           submission_id=submission_id)
+            n = Switcharoo(**params)
             for i in roo_issues:
                 n.issues.add(Issues[i])
+        return n
 
-    def last_good(self):
+    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[]):
+        params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
+                                           context=context)
+
+        with db_session:
+            roo = Switcharoo[roo.id]
+            roo.set(**params)
+            for i in roo_issues:
+                roo.issues.add(Issues[i])
+
+        return roo
+
+
+
+    def last_good(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if True not in s.issues.bad).order_by(desc(Switcharoo.id)).limit(1)
-            roo = q[0]
+            q = select(s for s in Switcharoo if True not in s.issues.bad).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            if q:
+                roo = q[0]
+        if roo:
+            self._link_reddit(roo)
+        return roo
+
+    def last_submission(self, offset=0):
+        roo = None
+        with db_session:
+            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            if q:
+                roo = q[0]
         if roo:
             self._link_reddit(roo)
         return roo
@@ -85,7 +127,18 @@ class SwitcharooLog:
         roo = None
         with db_session:
             q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(1)
-            roo = q[0]
+            if q:
+                roo = q[0]
+        if roo:
+            self._link_reddit(roo)
+        return roo
+
+    def search(self, thread_id, comment_id):
+        roo = None
+        with db_session:
+            q = select(s for s in Switcharoo if s.thread_id == thread_id and s.comment_id == comment_id)
+            if q:
+                roo = q.first()
         if roo:
             self._link_reddit(roo)
         return roo
@@ -98,28 +151,28 @@ class SwitcharooLog:
             good = False
             while not good:
                 q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(10, counter)
+                if len(q) == 0:
+                    good = True
+                    break
                 for roo in q:
                     self._link_reddit(roo)
                     try:
-                        if roo.submission.author is None:
-                            roo.issues.add(Issues['submission_deleted'])
-                            continue
                         if roo.submission.banned_by:
                             if not roo.submission.approved_by:
-                                roo.issues.add(Issues['submission_deleted'])
+                                roo.issues.add(Issues[issues_obj.submission_deleted])
                                 continue
                         if hasattr(roo.submission, "removed"):
                             if roo.submission.removed:
-                                roo.issues.add(Issues['submission_deleted'])
+                                roo.issues.add(Issues[issues_obj.submission_deleted])
                                 continue
                     except prawcore.exceptions.BadRequest:
-                        roo.issues.add(Issues['submission_deleted'])
+                        roo.issues.add(Issues[issues_obj.submission_deleted])
                         continue
 
                     try:
                         roo.comment.refresh()
                     except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
-                        roo.issues.add(Issues['comment_deleted'])
+                        roo.issues.add(Issues[issues_obj.comment_deleted])
                         continue
                     # This one has passed the tests, should be good to go
                     good = True
@@ -128,7 +181,7 @@ class SwitcharooLog:
 
 
     def sync_issues(self):
-        from core.issues import issues as issues_list
+        from core.issues import issues_list
         with db_session:
             for i, issue_type in enumerate(issues_list):
                 q = select(r for r in Issues if r.type == issue_type['type'])

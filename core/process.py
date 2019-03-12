@@ -5,6 +5,7 @@ import praw.exceptions
 from core import parse
 from core.issues import *
 
+issues = GetIssues.get()
 
 def process(reddit, submission, last_switcharoo, action):
     """
@@ -40,7 +41,7 @@ def process(reddit, submission, last_switcharoo, action):
     print("Roo:", submission.title)
 
     # It's a roo, add it to the list of all roos
-    last_switcharoo.add_last(submission.url)
+    roo = last_switcharoo.add(submission.id)
 
     # Redo next three checks with regex
 
@@ -48,6 +49,7 @@ def process(reddit, submission, last_switcharoo, action):
     if submission.url.count("?") > 1:
         action.add_issue(submission_multiple_params)
         action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
         return
 
     # Verify it contains ?context
@@ -61,6 +63,7 @@ def process(reddit, submission, last_switcharoo, action):
 
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)
+    roo = last_switcharoo.update(roo, thread_id=thread_id, comment_id=comment_id, context=0)
 
     # If there was a comment in the link, make the comment object
     if comment_id:
@@ -68,6 +71,7 @@ def process(reddit, submission, last_switcharoo, action):
     else:   # If there was no comment in the link, take action
         action.add_issue(submission_linked_thread)
         action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
         return
 
     # If comment was deleted, this will make an error. The try alleviates that
@@ -76,12 +80,14 @@ def process(reddit, submission, last_switcharoo, action):
     except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
         action.add_issue(comment_deleted)
         action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
         return
 
     # Deleted comments sometimes don't generate errors
-    if comment.author is None or comment.body == "[removed]":
+    if comment.body == "[removed]":
         action.add_issue(comment_deleted)
-        action.act(submission, last_switcharoo.last_good())
+        action.act(submission, last_switcharoo.last_good(offset=1))
+        last_switcharoo.update(roo, roo_issues=action.issues)
         return
 
     # Get link in comment
@@ -97,13 +103,14 @@ def process(reddit, submission, last_switcharoo, action):
         """
         action.add_issue(comment_has_no_link)
         action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
         return
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
     next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
 
     # We'll need the last verified good switcharoo from here on
-    last_good_submission = last_switcharoo.last_good()
+    last_good_submission = last_switcharoo.last_good(offset=1)
 
     # check if there is a last good submission to verify against
     if last_good_submission:
@@ -117,9 +124,9 @@ def process(reddit, submission, last_switcharoo, action):
             else:
                 print("  Linked correctly to next level in roo")
         else:
-            # Was this linked correctly linked to pre-existing roo?
-            last_thread_id, last_comment_id = parse.thread_url_to_id(last_switcharoo.last_submitted())
-            if next_thread_id == last_thread_id and next_comment_id == last_comment_id:
+            # Was this linked correctly linked to another roo?
+            linked_roo = last_switcharoo.search(next_thread_id, next_comment_id)
+            if linked_roo:
                 # User correctly linked, the roo was just bad
                 action.add_issue(comment_linked_bad_roo)
             else:
@@ -130,7 +137,8 @@ def process(reddit, submission, last_switcharoo, action):
 
     action.act(submission, last_good_submission)
 
-    last_switcharoo.add_good(submission, thread_id, comment_id)
+    last_switcharoo.update(roo, roo_issues=action.issues)
+    # last_switcharoo.add_good(submission, thread_id, comment_id)
 
     return
 
