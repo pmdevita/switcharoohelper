@@ -19,8 +19,8 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 switcharoo = reddit.subreddit("switcharoo")
 
 # Action object tracks switcharoo and performs a final action (delete/comment)
-# action = ModAction(reddit)
-action = PrintAction(reddit)
+action = ModAction(reddit)
+# action = PrintAction(reddit)
 settled_action = PrintAction(reddit)
 
 # LastData keeps track of data from the last time the helper was run so we can restore state

@@ -6,9 +6,13 @@ Provides different methods to parse Reddit data
 
 class REPatterns:
     # returns the URL from a Reddit embedded hyperlink
-    link = re.compile("\[.*?\] *\n? *\((.*?)\)")
-    reddit_thread = re.compile("(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
-    wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
+    old_link = re.compile("\[.*?\] *\n? *\((.*?)\)")
+    link = re.compile("\[(.*?)\] *\n? *\((.*?)\)")
+    reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
+    # Newer regex parsers
+    reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/\w+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?$")
+    reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/\w+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?")
+    # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
 def thread_url_to_id(url):
     """
@@ -53,7 +57,7 @@ def thread_url_to_id(url):
 
 def parse_comment(text):
     """Get url from switcharoo comment"""
-    matches = REPatterns.link.findall(text)
+    matches = REPatterns.old_link.findall(text)
     if matches:
         # Now check for a reddit link
         for i in matches:
@@ -65,5 +69,37 @@ def parse_comment(text):
 def only_reddit_url(text):
     """Determines if text is only a reddit URL. Used for finding incorrectly made
     meta posts"""
-    match = REPatterns.wrongly_meta.match(text)
-    return match is True
+    match = REPatterns.reddit_detect.match(text)
+    if match:
+        return True
+
+    total_len = len(text)
+    threshold = 15
+
+    # If it is an embedded link
+    link = REPatterns.link.findall(text)
+    if link:
+
+        # Recalcuate total characters
+        for i in link:
+            total_len -= len(i[0]) + len(i[1]) + 4  # markup characters
+
+        print("link found", link, total_len)
+
+        # Is the embedded link a reddit link?
+        for i in link:
+            reddit_match = REPatterns.reddit_detect.match(i[1])
+            if reddit_match:
+                print("reddit match", reddit_match)
+                if total_len < threshold:
+                    return True
+
+    # If there's text around the link
+    match = REPatterns.reddit_detect.search(text)
+    # There is, are we under threshold?
+    if match:
+        total_len -= match.end() - match.start()
+        if total_len < threshold:
+            return True
+
+    return False
