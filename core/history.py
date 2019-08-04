@@ -10,6 +10,7 @@ issues_obj = GetIssues.get()
 
 db = Database()
 
+
 def bind_db(db):
     creds = CredentialsLoader.get_credentials()['database']
 
@@ -26,12 +27,14 @@ def bind_db(db):
     else:
         raise Exception("No database configuration")
 
+
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
     submission_id = Required(str)
     thread_id = Optional(str)
     comment_id = Optional(str)
     context = Optional(int)
+    link_post = Required(bool)
     issues = Set('Issues')
 
     def _link_reddit(self, reddit):
@@ -63,6 +66,7 @@ bind_db(db)
 db.generate_mapping(create_tables=True)
 # set_sql_debug(True)
 
+
 class SwitcharooLog:
     def __init__(self, reddit):
         self.reddit = reddit
@@ -72,6 +76,7 @@ class SwitcharooLog:
         roo._link_reddit(self.reddit)
 
     def _params_without_none(self, **kwargs):
+        """Calling this allows us to have positional arguments that don't affect anything unless set by user"""
         base_params = kwargs
         params = {}
         for key in base_params:
@@ -79,9 +84,9 @@ class SwitcharooLog:
                 params[key] = base_params[key]
         return params
 
-    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[]):
+    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
-                                           context=context)
+                                           context=context, link_post=link_post)
 
         with db_session:
             n = Switcharoo(**params)
@@ -101,12 +106,10 @@ class SwitcharooLog:
 
         return roo
 
-
-
     def last_good(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if True not in s.issues.bad).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -143,14 +146,13 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
-
     def verify(self):
         """Verify roos until we have one last good roo"""
         with db_session:
-            counter = 0
+            offset = 0
             good = False
             while not good:
-                q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(10, counter)
+                q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(10, offset)
                 if len(q) == 0:
                     good = True
                     break
@@ -168,17 +170,16 @@ class SwitcharooLog:
                     except prawcore.exceptions.BadRequest:
                         roo.issues.add(Issues[issues_obj.submission_deleted])
                         continue
-
-                    try:
-                        roo.comment.refresh()
-                    except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
-                        roo.issues.add(Issues[issues_obj.comment_deleted])
-                        continue
+                    if roo.link_post:
+                        try:
+                            roo.comment.refresh()
+                        except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
+                            roo.issues.add(Issues[issues_obj.comment_deleted])
+                            continue
                     # This one has passed the tests, should be good to go
                     good = True
                     break
-                counter += 10
-
+                offset += 10
 
     def sync_issues(self):
         from core.issues import issues_list
@@ -202,3 +203,4 @@ if __name__ == '__main__':
     #     log.add(''.join(random.sample(string.ascii_letters, 7)), ''.join(random.sample(string.ascii_letters, 7)),
     #                     ''.join(random.sample(string.ascii_letters, 7)), random.randrange(5), issues)
     print(log.last_good(), log.last())
+
