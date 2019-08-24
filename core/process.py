@@ -25,6 +25,7 @@ def process(reddit, submission, last_switcharoo, action):
             if parse.only_reddit_url(submission.selftext):
                 action.add_issue(submission_is_meta)
                 action.act(submission)
+        roo = last_switcharoo.add(submission.id, link_post=False)
         return
 
     # Ignore announcements
@@ -41,9 +42,13 @@ def process(reddit, submission, last_switcharoo, action):
     print("Roo:", submission.title)
 
     # It's a roo, add it to the list of all roos
-    roo = last_switcharoo.add(submission.id)
+    # Mark it as unfinished in processing in case the roo doesn't finish getting processed
+    roo = last_switcharoo.add(submission.id, roo_issues=[issues.submission_processing])
 
     # Redo next three checks with regex
+
+    regex = parse.REPatterns.reddit_strict_parse.findall(submission.url)
+    print(regex, parse.process_url_params(regex[0][-1]))
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:
@@ -137,7 +142,7 @@ def process(reddit, submission, last_switcharoo, action):
 
     action.act(submission, last_good_submission)
 
-    last_switcharoo.update(roo, roo_issues=action.issues)
+    last_switcharoo.update(roo, roo_issues=action.issues, remove_issues=[issues.submission_processing])
     # last_switcharoo.add_good(submission, thread_id, comment_id)
 
     return

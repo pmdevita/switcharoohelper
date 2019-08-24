@@ -34,6 +34,8 @@ submission_is_meta = 10
 # The submission has linked the post on r/switcharoo, not the link
 submission_linked_post = 11
 
+submission_processing = 12
+
 issues_list = [
     # The submission link does not have a ?context suffix
     {"type": "submission_lacks_context", "bad": True},
@@ -72,7 +74,10 @@ issues_list = [
     {"type": "submission_linked_post", "bad": True},
 
     # The r/switcharoo submission has been deleted
-    {"type": "submission_deleted", "bad": True}
+    {"type": "submission_deleted", "bad": True},
+
+    # The submission has not been fully processed yet
+    {"type": "submission_processing", "bad": False}
 ]
 
 

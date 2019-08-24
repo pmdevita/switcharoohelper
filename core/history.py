@@ -1,5 +1,5 @@
 from datetime import date
-from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug
+from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, TransactionIntegrityError
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
@@ -30,7 +30,7 @@ def bind_db(db):
 
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
-    submission_id = Required(str)
+    submission_id = Required(str, unique=True)
     thread_id = Optional(str)
     comment_id = Optional(str)
     context = Optional(int)
@@ -87,14 +87,22 @@ class SwitcharooLog:
     def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, link_post=link_post)
-
-        with db_session:
-            n = Switcharoo(**params)
-            for i in roo_issues:
-                n.issues.add(Issues[i])
+        try:
+            with db_session:
+                n = Switcharoo(**params)
+                for i in roo_issues:
+                    n.issues.add(Issues[i])
+        # Probably already in the db
+        except TransactionIntegrityError:
+            with db_session:
+                n = select(s for s in Switcharoo if s.submission_id == submission_id).first()
+                if n:
+                    n.set(**params)
+                    for i in roo_issues:
+                        n.issues.add(Issues[i])
         return n
 
-    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[]):
+    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[], remove_issues=[]):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context)
 
@@ -103,6 +111,8 @@ class SwitcharooLog:
             roo.set(**params)
             for i in roo_issues:
                 roo.issues.add(Issues[i])
+            for i in remove_issues:
+                roo.issues.remove(Issues[i])
 
         return roo
 
@@ -119,7 +129,7 @@ class SwitcharooLog:
     def last_submission(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -159,6 +169,9 @@ class SwitcharooLog:
                 for roo in q:
                     self._link_reddit(roo)
                     try:
+                        # If this submission was in the middle of processing
+                        if Issues[issues_obj.submission_processing] in roo.issues:
+                            continue
                         if roo.submission.banned_by:
                             if not roo.submission.approved_by:
                                 roo.issues.add(Issues[issues_obj.submission_deleted])
@@ -167,6 +180,10 @@ class SwitcharooLog:
                             if roo.submission.removed:
                                 roo.issues.add(Issues[issues_obj.submission_deleted])
                                 continue
+                        # If author is none submission was deleted
+                        if roo.submission.author is None:
+                            roo.issues.add(Issues[issues_obj.submission_deleted])
+                            continue
                     except prawcore.exceptions.BadRequest:
                         roo.issues.add(Issues[issues_obj.submission_deleted])
                         continue

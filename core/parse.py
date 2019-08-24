@@ -10,10 +10,18 @@ class REPatterns:
     link = re.compile("\[(.*?)\] *\n? *\((.*?)\)")
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
-    reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/\w+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?$")
+    reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/[\w%]+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)(.+))?$")
     reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/[\w%]+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?")
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
+
+def process_url_params(url_params):
+    params = {}
+    param_list = url_params.split("&")
+    for param in param_list:
+        p = param.split("=")
+        params[p[0]] = p[1]
+    return params
 
 def thread_url_to_id(url):
     """
@@ -116,4 +124,5 @@ def only_reddit_url(text):
 
 
 if __name__ == '__main__':
-    print(is_meta_title("[Meta] broken link"))
+    # print(REPatterns.reddit_strict_parse.findall("https://www.reddit.com/r/CasualUK/comments/cllj0z/a_year_ago_i_decided_to_go_to_every_wetherspoons/evwbbe8?context=2&asdf=asdf"))
+    print(process_url_params("context=2&asdf=asdf"))
