@@ -4,11 +4,11 @@ import pendulum
 
 import prawcore.exceptions
 
-from core.credentials import get_credentials
+from core.credentials import CredentialsLoader
 from core import constants as consts
 from core import parse
 
-credentials = get_credentials()
+credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],
@@ -28,12 +28,15 @@ url = input()
 if not url:
     url = get_newest_id(switcharoo, 1)
 
+roo_count = 0
+
 print("SwitcharooHelper Tracer v{} Ctrl+C to stop".format(consts.version))
 
 while True:
     try:
         if url:
-            thread_id, comment_id = parse.thread_url_to_id(url)
+            if isinstance(url, str):
+                thread_id, comment_id = parse.thread_url_to_id(url)
         else:
             print("\nUnable to find a link. Go here, find the switcharoo, and paste the link \n"
                   "to the next one here. \n\n", last_url)
@@ -45,11 +48,20 @@ while True:
         date = pendulum.from_timestamp(comment.created_utc, tz="UTC")
         date = date.in_timezone("local")
 
-        print("{} {} {}".format(comment.body, date, comment.permalink))
+        print("{} {} {}".format(comment.body, date, comment.author, comment.permalink))
+        roo_count += 1
 
         last_url = url
         url = parse.parse_comment(comment.body)
-        # print(url)
+        # If not url, search
+        if not url:
+            print("Roo linked incorrectly")
+            url = parse.find_roo_comment(comment)
+            print("Guessing", url)
+            # print("y for yes, otherwise paste URL")
+            # response = input()
+            # if response.lower() != "y":
+            #     url = response
 
     except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
         print("Unable to connect to Reddit, is the internet down?")
@@ -62,3 +74,8 @@ while True:
     except KeyboardInterrupt:
         print("\nExiting...")
         break
+
+    except Exception as e:
+        print("Roo Count:", roo_count)
+        raise e
+print("Roo Count:", roo_count)

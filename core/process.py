@@ -1,4 +1,5 @@
 from pprint import pprint
+from datetime import datetime
 
 import praw.exceptions
 
@@ -6,6 +7,7 @@ from core import parse
 from core.issues import *
 
 issues = GetIssues.get()
+
 
 def process(reddit, submission, last_switcharoo, action):
     """
@@ -43,12 +45,15 @@ def process(reddit, submission, last_switcharoo, action):
 
     # It's a roo, add it to the list of all roos
     # Mark it as unfinished in processing in case the roo doesn't finish getting processed
-    roo = last_switcharoo.add(submission.id, roo_issues=[issues.submission_processing])
+    roo = last_switcharoo.add(submission.id, roo_issues=[issues.submission_processing], time=datetime.utcfromtimestamp(submission.created_utc))
 
     # Redo next three checks with regex
 
     regex = parse.REPatterns.reddit_strict_parse.findall(submission.url)
-    print(regex, parse.process_url_params(regex[0][-1]))
+    url_params = parse.process_url_params(regex[0][-1])
+    print(regex, url_params)
+    context = int(url_params['context']) if "context" in url_params else 0
+    last_switcharoo.update(roo, context=context)
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:
@@ -68,7 +73,7 @@ def process(reddit, submission, last_switcharoo, action):
 
     # Create object from comment (what the submission is linking to)
     thread_id, comment_id = parse.thread_url_to_id(submission.url)
-    roo = last_switcharoo.update(roo, thread_id=thread_id, comment_id=comment_id, context=0)
+    roo = last_switcharoo.update(roo, thread_id=thread_id, comment_id=comment_id)
 
     # If there was a comment in the link, make the comment object
     if comment_id:
@@ -115,7 +120,7 @@ def process(reddit, submission, last_switcharoo, action):
     next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
 
     # We'll need the last verified good switcharoo from here on
-    last_good_submission = last_switcharoo.last_good(offset=1)
+    last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=1)
 
     # check if there is a last good submission to verify against
     if last_good_submission:

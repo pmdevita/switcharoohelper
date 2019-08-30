@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, TransactionIntegrityError
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
@@ -30,6 +30,7 @@ def bind_db(db):
 
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
+    time = Required(datetime)
     submission_id = Required(str, unique=True)
     thread_id = Optional(str)
     comment_id = Optional(str)
@@ -84,9 +85,9 @@ class SwitcharooLog:
                 params[key] = base_params[key]
         return params
 
-    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True):
+    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True, time=None):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
-                                           context=context, link_post=link_post)
+                                           context=context, link_post=link_post, time=time)
         try:
             with db_session:
                 n = Switcharoo(**params)
@@ -102,9 +103,9 @@ class SwitcharooLog:
                         n.issues.add(Issues[i])
         return n
 
-    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[], remove_issues=[]):
+    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[], remove_issues=[], time=None):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
-                                           context=context)
+                                           context=context, time=None)
 
         with db_session:
             roo = Switcharoo[roo.id]
@@ -116,10 +117,12 @@ class SwitcharooLog:
 
         return roo
 
-    def last_good(self, offset=0):
+    def last_good(self, before_roo=None, offset=0):
+        time = before_roo.time if before_roo else datetime.now()
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time).order_by(
+                desc(Switcharoo.time)).limit(1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -129,7 +132,7 @@ class SwitcharooLog:
     def last_submission(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.id)).limit(1, offset=offset)
+            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.time)).limit(1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -139,7 +142,7 @@ class SwitcharooLog:
     def last(self):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(1)
+            q = select(s for s in Switcharoo).order_by(desc(Switcharoo.time)).limit(1)
             if q:
                 roo = q[0]
         if roo:
@@ -162,7 +165,7 @@ class SwitcharooLog:
             offset = 0
             good = False
             while not good:
-                q = select(s for s in Switcharoo).order_by(desc(Switcharoo.id)).limit(10, offset)
+                q = select(s for s in Switcharoo).order_by(desc(Switcharoo.time)).limit(10, offset)
                 if len(q) == 0:
                     good = True
                     break

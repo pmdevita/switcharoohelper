@@ -10,8 +10,8 @@ class REPatterns:
     link = re.compile("\[(.*?)\] *\n? *\((.*?)\)")
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
-    reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/[\w%]+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)(.+))?$")
-    reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/)?(?(1)(\w{3,21}))(?(2)/comments/(\w{6})(?:/[\w%]+)?)?(?(3)/(\w{7}))?/?(\?)?(?(5)([a-zA-Z0-9%&=]+))?")
+    reddit_strict_parse = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(.+))?$")
+    reddit_detect = re.compile("http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(.+))?")
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
 
@@ -23,6 +23,7 @@ def process_url_params(url_params):
         params[p[0]] = p[1]
     return params
 
+
 def thread_url_to_id(url):
     """
     TODO: Make a regex expression instead
@@ -31,11 +32,11 @@ def thread_url_to_id(url):
     :return: Thread ID and comment ID
     """
 
-    match = REPatterns.reddit_thread.match(url)
+    match = REPatterns.reddit_strict_parse.match(url)
 
     if match:
-        thread_id = match.group("thread_id")
-        comment_id = match.group("comment_id")
+        thread_id = match[4]
+        comment_id = match[5]
     else:
         return None, None
 
@@ -66,13 +67,18 @@ def thread_url_to_id(url):
 
 def parse_comment(text):
     """Get url from switcharoo comment"""
+    # Grab all URLs from all links
     matches = REPatterns.old_link.findall(text)
     if matches:
         # Now check for a reddit link
         for i in matches:
-            match = REPatterns.reddit_thread.match(i)
+            match = REPatterns.reddit_detect.findall(i)
             if match:
                 return i
+    # Search for just general URLs in the comment
+    matches = REPatterns.reddit_detect.match(text)
+    if matches:
+        return matches[0]
     return None
 
 
@@ -121,6 +127,24 @@ def only_reddit_url(text):
             return True
 
     return False
+
+
+def find_roo_recursive(comment, depth):
+    if not depth:
+        return None
+    url = parse_comment(comment.body)
+    if url:
+        return url
+    else:
+        comment.refresh()
+        for reply in comment.replies:
+            url = find_roo_recursive(reply, depth - 1)
+            if url:
+                return url
+
+
+def find_roo_comment(comment):
+    return find_roo_recursive(comment, 4)
 
 
 if __name__ == '__main__':

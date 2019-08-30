@@ -12,6 +12,13 @@ client_id = your-client-id
 client_secret = your-client-secret
 username = username-of-account
 password = password-of-account
+
+[database]
+type = mysql|sqlite
+host = ip|domainvc
+username = username
+password = password
+database = switcharoo
 ```
 
 then run `main.py`.

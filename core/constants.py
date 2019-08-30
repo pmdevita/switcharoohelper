@@ -1,4 +1,4 @@
-version = "2.0a"
+version = "2.0.1a"
 user_agent = "SwitcharooHelper by /u/pmdevita v{}"
 sleep_time = 120
 sleep_time_test = 10
