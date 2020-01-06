@@ -47,11 +47,11 @@ class PrintAction(BaseAction):
             message_lines.append("https://www.reddit.com{} has no link in the comment".format(
                 submission.permalink))
         if comment_linked_wrong in self.issues:
-            message_lines.append("https://www.reddit.com{} comment is not linked to the next level, https://www.reddit.com{}".format(
-                submission.permalink, last_good_submission.comment.permalink))
+            message_lines.append("https://www.reddit.com{} comment is not linked to the next level, https://www.reddit."
+                                 "com{}".format(submission.permalink, last_good_submission.comment.permalink))
         if comment_linked_bad_roo in self.issues:
-            message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not https://www.reddit.com{}".format(
-                submission.permalink, last_good_submission.comment.permalink))
+            message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not https://www.reddit.com{}"
+                                 .format(submission.permalink, last_good_submission.comment.permalink))
         if comment_lacks_context in self.issues:
             message_lines.append("https://www.reddit.com{} comment is correct link but did not "
                                  "have ?context in it".format(submission.permalink))
@@ -91,12 +91,16 @@ class ModAction(BaseAction):
                                  "click the permalink button on the comment (or on mobile, grab the link to the "
                                  "comment).")
         if comment_deleted in self.issues:
-            message_lines.append("your switcharoo comment was deleted. If you think it was that subreddit's "
-                                 "moderators, please let us know so we can add it to the forbidden subs list.")
+            message_lines.append("your switcharoo comment was deleted. If you deleted your comment, please don't do "
+                                 "that. If you didn't, then the subreddit moderators probably removed your comment. "
+                                 "Unfortunately, due to how Reddit works, you won't be able to see that the comment "
+                                 "was removed while logged in.\n\nIf you think it was that subreddit's moderators, "
+                                 "please let us know so we can add it to the forbidden subs list. Also, sorry. It "
+                                 "sucks when this happens.")
             resubmit = False
         if comment_has_no_link in self.issues:
             message_lines.append("your submission does not link to a switcharoo. It's very likely you linked the "
-                                 "wrong comment. Read the sidebar for more information.")
+                                 "wrong comment. Read the sidebar or stickied \"how to\" post for more information.")
         if comment_linked_wrong in self.issues:
             message_lines.append("your switcharoo is not linked to the correct roo. Did you remember to sort the "
                                  "subreddit by new? The correct link is \n\n{}\n\nCan you please change it to "
@@ -109,12 +113,12 @@ class ModAction(BaseAction):
             resubmit = False
             action = WARN
         if comment_lacks_context in self.issues:
-            message_lines.append("the roo you have **linked to in your comment** (not the URL you have submitted) is missing a `?context=x` suffix. Most likely, "
-                                 "the roo'er previous to you left it out but it's possible you missed it in copying "
-                                 "their link.\n\nGo to the switcharoo your comment links to and count how many "
-                                 "comments above it are needed to understand the joke. Then, in the link in your "
-                                 "comment, append `?context=x` to the end of the link, replacing x with the number of "
-                                 "levels you counted. Thanks for fixing it!")
+            message_lines.append("the roo you have **linked to in your comment** (not the URL you have submitted) is "
+                                 "missing a `?context=x` suffix. Most likely, the roo'er previous to you left it out "
+                                 "but it's possible you missed it in copying their link.\n\nGo to the switcharoo your "
+                                 "comment links to and count how many comments above it are needed to understand the "
+                                 "joke. Then, in the link in your comment, append `?context=x` to the end of the link, "
+                                 "replacing x with the number of levels you counted. Thanks for fixing it!")
             resubmit = False
             action = WARN
             request_assistance = True
@@ -137,7 +141,6 @@ class ModAction(BaseAction):
         if submission_is_meta in self.issues:
             message_lines.append("your post appears to be a roo submitted as a text post. All switcharoos should be "
                                  "submitted as link posts for clarity and subreddit organization.")
-
 
         # Choose template based on action
         if action == DELETE:

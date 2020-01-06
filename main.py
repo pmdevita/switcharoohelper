@@ -1,6 +1,6 @@
 import praw
 import time
-
+import traceback
 import prawcore.exceptions
 
 from core.credentials import get_credentials, CredentialsLoader
@@ -20,9 +20,16 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 switcharoo = reddit.subreddit("switcharoo")
 
 # Action object tracks switcharoo and performs a final action (delete/comment)
-action = ModAction(reddit)
-# action = PrintAction(reddit)
-# settled_action = PrintAction(reddit)
+mode = CredentialsLoader.get_credentials()['general']['mode']
+operator = CredentialsLoader.get_credentials()['general']['operator']
+
+if mode == 'production':
+    action = ModAction(reddit)
+elif mode == 'development':
+    action = PrintAction(reddit)
+else:
+    print("No mode defined in credentials")
+    exit(1)
 
 # LastData keeps track of data from the last time the helper was run so we can restore state
 # last_data = LastData()
@@ -108,3 +115,9 @@ while True:
     except KeyboardInterrupt:
         print("\nExiting...")
         break
+
+    except Exception as e:
+        if mode == "production":
+            reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
+                str(traceback.format_exc()).replace('\n', '\n    ')))
+        raise

@@ -27,7 +27,7 @@ def process(reddit, submission, last_switcharoo, action):
             if parse.only_reddit_url(submission.selftext):
                 action.add_issue(submission_is_meta)
                 action.act(submission)
-        roo = last_switcharoo.add(submission.id, link_post=False)
+        roo = last_switcharoo.add(submission.id, link_post=False, time=datetime.utcfromtimestamp(submission.created_utc))
         return
 
     # Ignore announcements

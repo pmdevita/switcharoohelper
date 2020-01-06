@@ -122,7 +122,9 @@ class SwitcharooLog:
         roo = None
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time).order_by(
-                desc(Switcharoo.time)).limit(1, offset=offset)
+                desc(Switcharoo.time)).limit(limit=1, offset=0)
+            for i in q:
+                print(q)
             if q:
                 roo = q[0]
         if roo:
