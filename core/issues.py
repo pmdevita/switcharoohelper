@@ -37,7 +37,7 @@ submission_linked_post = 11
 submission_processing = 12
 
 # The submission is linked to a NSFW post
-submission_linked_post = 13
+submission_is_NSFW = 13
 
 issues_list = [
     # The submission link does not have a ?context suffix
