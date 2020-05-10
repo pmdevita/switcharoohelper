@@ -67,6 +67,9 @@ class PrintAction(BaseAction):
         if submission_is_meta in self.issues:
             message_lines.append("https://www.reddit.com{} is a meta post switcharoo".format(
                 submission.permalink))
+        if submission_is_NSFW in self.issues:
+            message_lines.append("https://www.reddit.com{} is linked to a NSFW post and will not be considered for a roo".format(
+                submission.permalink))
         for i in message_lines:
             print(" ", i)
 
@@ -141,6 +144,12 @@ class ModAction(BaseAction):
         if submission_is_meta in self.issues:
             message_lines.append("your post appears to be a roo submitted as a text post. All switcharoos should be "
                                  "submitted as link posts for clarity and subreddit organization.")
+
+        if submission_is_NSFW in self.issues:
+                    message_lines.append("your post is linked to a NSFW post. As per the subbreddit rule, this post will not be linked to a roo"
+                                         "Kindly delete the post.")
+                    resubmit = False
+                    action = WARN
 
         # Choose template based on action
         if action == DELETE:

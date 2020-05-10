@@ -41,6 +41,15 @@ def process(reddit, submission, last_switcharoo, action):
         action.act(submission)
         return
 
+    # Verify that the linked post is not NSFW
+    # If yes, delete the roo.
+    linked_post_id = parse.thread_url_to_id(submission.url)[0]
+    linked_post = reddit.submission(id=linked_post_id)
+    if linked_post.over_18:
+        action.add_issue(submission_not_reddit)
+        action.act(submission)
+        return
+
     print("Roo:", submission.title)
 
     # It's a roo, add it to the list of all roos

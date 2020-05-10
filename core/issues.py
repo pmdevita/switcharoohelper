@@ -36,6 +36,9 @@ submission_linked_post = 11
 
 submission_processing = 12
 
+# The submission is linked to a NSFW post
+submission_linked_post = 13
+
 issues_list = [
     # The submission link does not have a ?context suffix
     {"type": "submission_lacks_context", "bad": True},
@@ -77,7 +80,10 @@ issues_list = [
     {"type": "submission_deleted", "bad": True},
 
     # The submission has not been fully processed yet
-    {"type": "submission_processing", "bad": False}
+    {"type": "submission_processing", "bad": False},
+
+    # The submission is linked to a NSFW post
+    {"type": "submission_is_NSFW", "bad": True}
 ]
 
 
