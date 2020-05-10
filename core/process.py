@@ -46,7 +46,7 @@ def process(reddit, submission, last_switcharoo, action):
     linked_post_id = parse.thread_url_to_id(submission.url)[0]
     linked_post = reddit.submission(id=linked_post_id)
     if linked_post.over_18:
-        action.add_issue(submission_not_reddit)
+        action.add_issue(submission_is_NSFW)
         action.act(submission)
         return
 
