@@ -146,10 +146,10 @@ class ModAction(BaseAction):
                                  "submitted as link posts for clarity and subreddit organization.")
 
         if submission_is_NSFW in self.issues:
-                    message_lines.append("your post is linked to a NSFW post. As per the subbreddit rule, this post will not be linked to a roo"
-                                         "Kindly delete the post.")
-                    resubmit = False
-                    action = WARN
+            message_lines.append("your post is linked to a NSFW post. As per r/switcharoo house rules," 
+                                 "we don't allow submissions from NSFW subreddits. Sorry about that!.")
+            resubmit = False
+            action = DELETE
 
         # Choose template based on action
         if action == DELETE:
