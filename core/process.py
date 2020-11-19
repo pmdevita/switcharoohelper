@@ -151,17 +151,19 @@ def process(reddit, submission, last_switcharoo, action):
         # Is this switcharoo comment linked to the last good switcharoo?
         if next_thread_id == last_good_submission.thread_id and \
                         next_comment_id == last_good_submission.comment_id:
-            # Woohoo! Linked to correct comment. Now check for context param
+            # Hooray! Linked to correct comment. Now check for context param
+            url_params = parse.process_url_params(regex[0][-1])
 
-
-
-
-
-
-            if "?context" not in comment_link:
+            # Verify it contains context param
+            if "context" not in url_params:
                 action.add_issue(comment_lacks_context)
-            else:
-                print("  Linked correctly to next level in roo")
+
+            # Try to get the context value
+            try:
+                context = int(url_params['context'])
+            except ValueError:  # context is not a number
+                action.add_issue(comment_lacks_context) # Should be a different error
+
         else:
             # Was this linked correctly linked to another roo?
             linked_roo = last_switcharoo.search(next_thread_id, next_comment_id)

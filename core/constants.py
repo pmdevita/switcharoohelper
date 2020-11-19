@@ -1,5 +1,5 @@
-version = "2.0.2a"
-user_agent = "SwitcharooHelper by /u/pmdevita v{}"
+version = "2.0.3a"
+user_agent = f"SwitcharooHelper by /u/pmdevita v{version}"
 sleep_time = 120
 sleep_time_test = 10
 settled_check = 60 * 60 * 24 * 4
