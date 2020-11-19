@@ -123,8 +123,18 @@ class SwitcharooLog:
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time).order_by(
                 desc(Switcharoo.time)).limit(limit=1, offset=0)
-            for i in q:
-                print(q)
+            if q:
+                roo = q[0]
+        if roo:
+            self._link_reddit(roo)
+        return roo
+
+    def next_good(self, after_roo, offset=0):
+        time = after_roo.time
+        roo = None
+        with db_session:
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time > time).limit(
+                limit=1, offset=0)
             if q:
                 roo = q[0]
         if roo:
@@ -151,12 +161,18 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
-    def search(self, thread_id, comment_id):
+    def search(self, thread_id=None, comment_id=None, submission_id=None):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if s.thread_id == thread_id and s.comment_id == comment_id)
-            if q:
-                roo = q.first()
+            query = select(s for s in Switcharoo)
+            if thread_id:
+                query = query.filter(lambda q: q.thread_id == thread_id)
+            if comment_id:
+                query = query.filter(lambda q: q.comment_id == comment_id)
+            if submission_id:
+                query = query.filter(lambda q: q.submission_id == submission_id)
+            if query:
+                roo = query.first()
         if roo:
             self._link_reddit(roo)
         return roo

@@ -67,6 +67,9 @@ class PrintAction(BaseAction):
         if submission_is_meta in self.issues:
             message_lines.append("https://www.reddit.com{} is a meta post switcharoo".format(
                 submission.permalink))
+        if submission_bad_url in self.issues:
+            message_lines.append("https://www.reddit.com{} has a malformed URL".format(
+                submission.permalink))
         for i in message_lines:
             print(" ", i)
 
@@ -141,6 +144,9 @@ class ModAction(BaseAction):
         if submission_is_meta in self.issues:
             message_lines.append("your post appears to be a roo submitted as a text post. All switcharoos should be "
                                  "submitted as link posts for clarity and subreddit organization.")
+        if submission_bad_url in self.issues:
+            message_lines.append("your URL seems to have either the submission ID or post ID messed up. Did you copy "
+                                 "it correctly?")
 
         # Choose template based on action
         if action == DELETE:

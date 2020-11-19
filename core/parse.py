@@ -7,21 +7,29 @@ Provides different methods to parse Reddit data
 class REPatterns:
     # returns the URL from a Reddit embedded hyperlink
     old_link = re.compile("\[.*?\] *\n? *\((.*?)\)")
-    link = re.compile("\[(.*?)\] *\n? *\((.*?)\)")
+    link = re.compile("\[(.*?)\] *\n? *\(\s*(.*?)\s*\)")
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
-    REDDIT_PATTERN = "http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{3,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
+    REDDIT_PATTERN = "http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
     reddit_strict_parse = re.compile("^{}$".format(REDDIT_PATTERN))
     reddit_detect = re.compile(REDDIT_PATTERN)
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
+
+
+class RedditURL:
+    def __init__(self, url):
+        self._regex = REPatterns.reddit_strict_parse.match(url)
+
+
 
 
 def process_url_params(url_params):
     params = {}
     param_list = url_params.split("&")
     for param in param_list:
-        p = param.split("=")
-        params[p[0]] = p[1]
+        if "=" in param:
+            p = param.split("=")
+            params[p[0]] = p[1]
     return params
 
 
@@ -69,13 +77,13 @@ def thread_url_to_id(url):
 def parse_comment(text):
     """Get url from switcharoo comment"""
     # Grab all URLs from all links
-    matches = REPatterns.old_link.findall(text)
+    matches = REPatterns.link.findall(text)
     if matches:
         # Now check for a reddit link
         for i in matches:
-            match = REPatterns.reddit_detect.findall(i)
+            match = REPatterns.reddit_detect.findall(i[1])
             if match:
-                return i
+                return i[1].strip()
     # Search for just general URLs in the comment
     matches = REPatterns.reddit_detect.match(text)
     if matches:

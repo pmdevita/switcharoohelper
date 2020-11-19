@@ -36,6 +36,8 @@ submission_linked_post = 11
 
 submission_processing = 12
 
+submission_bad_url = 13
+
 issues_list = [
     # The submission link does not have a ?context suffix
     {"type": "submission_lacks_context", "bad": True},
@@ -77,7 +79,10 @@ issues_list = [
     {"type": "submission_deleted", "bad": True},
 
     # The submission has not been fully processed yet
-    {"type": "submission_processing", "bad": False}
+    {"type": "submission_processing", "bad": False},
+
+    # The submission's URL is malformed in some unknown way
+    {"type": "submission_bad_url", "bad": False},
 ]
 
 

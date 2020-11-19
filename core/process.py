@@ -50,9 +50,33 @@ def process(reddit, submission, last_switcharoo, action):
     # Redo next three checks with regex
 
     regex = parse.REPatterns.reddit_strict_parse.findall(submission.url)
+
+    # Some URLs may not pass the stricter check, probably because they did something wrong
+    if not regex:
+        action.add_issue(submission_bad_url)
+        action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
+        return
+
     url_params = parse.process_url_params(regex[0][-1])
     print(regex, url_params)
-    context = int(url_params['context']) if "context" in url_params else 0
+
+    # Verify it contains context param
+    if "context" not in url_params:
+        action.add_issue(submission_lacks_context)
+        action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
+        return
+
+    # Try to get the context value
+    try:
+        context = int(url_params['context'])
+    except ValueError:  # context is not a number
+        action.add_issue(submission_lacks_context)
+        action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
+        return
+
     last_switcharoo.update(roo, context=context)
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
@@ -61,10 +85,6 @@ def process(reddit, submission, last_switcharoo, action):
         action.act(submission)
         last_switcharoo.update(roo, roo_issues=action.issues)
         return
-
-    # Verify it contains ?context
-    if "?context" not in submission.url:
-        action.add_issue(submission_lacks_context)
 
     # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
     if submission.url.count("?"):
@@ -117,7 +137,10 @@ def process(reddit, submission, last_switcharoo, action):
         return
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
+    regex = parse.REPatterns.reddit_strict_parse.findall(comment_link)
     next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
+    print("New Regex:", regex)
+    print("Old Regex:", next_thread_id, next_comment_id)
 
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=1)
@@ -128,7 +151,13 @@ def process(reddit, submission, last_switcharoo, action):
         # Is this switcharoo comment linked to the last good switcharoo?
         if next_thread_id == last_good_submission.thread_id and \
                         next_comment_id == last_good_submission.comment_id:
-            # Woohoo! Linked to correct comment. Now check for ?context
+            # Woohoo! Linked to correct comment. Now check for context param
+
+
+
+
+
+
             if "?context" not in comment_link:
                 action.add_issue(comment_lacks_context)
             else:
