@@ -71,6 +71,11 @@ def process(reddit, submission, last_switcharoo, action):
     # Try to get the context value
     try:
         context = int(url_params['context'])
+    except KeyError:  # context is not in URL params
+        action.add_issue(submission_lacks_context)
+        action.act(submission)
+        last_switcharoo.update(roo, roo_issues=action.issues)
+        return
     except ValueError:  # context is not a number
         action.add_issue(submission_lacks_context)
         action.act(submission)
@@ -161,6 +166,8 @@ def process(reddit, submission, last_switcharoo, action):
             # Try to get the context value
             try:
                 context = int(url_params['context'])
+            except KeyError:  # context is not in URL params
+                action.add_issue(comment_lacks_context)
             except ValueError:  # context is not a number
                 action.add_issue(comment_lacks_context) # Should be a different error
 
