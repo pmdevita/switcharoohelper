@@ -95,11 +95,11 @@ class ModAction(BaseAction):
                                  "comment).")
         if comment_deleted in self.issues:
             message_lines.append("your switcharoo comment was deleted. If you deleted your comment, please don't do "
-                                 "that. If you didn't, then the subreddit moderators probably removed your comment. "
-                                 "Unfortunately, due to how Reddit works, you won't be able to see that the comment "
-                                 "was removed while logged in.\n\nIf you think it was that subreddit's moderators, "
-                                 "please let us know so we can add it to the forbidden subs list. Also, sorry. It "
-                                 "sucks when this happens.")
+                                 "that. If you can still see the comment, then the subreddit moderators probably "
+                                 "removed it. If you want to double check, log out or log into a "
+                                 "different account and look for your comment.\n\nIf you think your comment was "
+                                 "removed by was that subreddit's moderators, please let us know so we can add it to "
+                                 "the forbidden subs list. Also, sorry. It sucks when this happens.")
             resubmit = False
         if comment_has_no_link in self.issues:
             message_lines.append("your submission does not link to a switcharoo. It's very likely you linked the "
