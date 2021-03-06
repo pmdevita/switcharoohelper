@@ -13,7 +13,7 @@ credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],
-                     user_agent=consts.user_agent.format(consts.version),
+                     user_agent=consts.user_agent,
                      username=credentials["username"],
                      password=credentials["password"])
 

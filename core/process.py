@@ -12,6 +12,7 @@ issues = GetIssues.get()
 def process(reddit, submission, last_switcharoo, action):
     """
     Check the submission to make sure it is correct
+    :param last_switcharoo:
     :param reddit: PRAW reddit instance
     :param submission: post to check
     :param last_good_submission: a dict of the last good submission in the chain's thread_id, comment_id, and submission object
