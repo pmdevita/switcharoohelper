@@ -112,18 +112,52 @@ class GetIssues:
             cls.bad = BadIssues()
         return cls.bad
 
+
 class Issue:
-    def __init__(self, type, bad):
-        self.type = type
+    def __init__(self, name, bad):
+        self.name = name
         self.bad = bad
-        self.has_issue = False # Is there a better name for this?
+        self.has_issue = False  # Is there a better name for this?
+
+    def __get__(self, obj, obj_type=None):
+        return obj.has_issue
+
+    def __set__(self, obj, value):
+        obj.has_issue = value
+
+    def __str__(self):
+        return f"Issue-{self.name} {self.has_issue}"
 
 
 class IssueTracker:
     def __init__(self):
+        super(IssueTracker, self).__setattr__("_setup", True)
         self.issue_dict = {}
         self.issues = []
         for i in issues_list:
             issue = Issue(i['type'], i['bad'])
             self.issue_dict[i['type']] = issue
             self.issues.append(issue)
+        self._setup = False
+
+    def __getattr__(self, item):
+        return self.issue_dict[item]
+    
+    def __setattr__(self, key, value):
+        if super(IssueTracker, self).__getattribute__("_setup"):
+            return super(IssueTracker, self).__setattr__(key, value)
+        else:
+            self.issue_dict[key].has_issue = value
+
+    def __setitem__(self, key, value):
+        self.issues[key].has_issue = value
+
+    def __contains__(self, item):
+        return self.issue_dict[item].has_issue
+
+
+if __name__ == '__main__':
+    it = IssueTracker()
+    print(it.submission_processing)
+    it.submission_processing = True
+    print(it.submission_processing)

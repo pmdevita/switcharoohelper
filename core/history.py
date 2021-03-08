@@ -5,7 +5,9 @@ from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
 import prawcore.exceptions
-import random, string
+import random
+import string
+from core.issues import issues_list, IssueTracker
 
 issues_obj = GetIssues.get()
 
@@ -123,12 +125,13 @@ class SwitcharooLog:
 
         return roo
 
+    # Used to set offset to 1 to get last good but was never hooked up properly? IDK why it was done
     def last_good(self, before_roo=None, offset=0):
         time = before_roo.time if before_roo else datetime.now()
         roo = None
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time).order_by(
-                desc(Switcharoo.time)).limit(limit=1, offset=0)
+                desc(Switcharoo.time)).limit(limit=1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -185,6 +188,15 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
+    def get_issues(self, roo):
+        tracker = IssueTracker()
+        with db_session:
+            roo = Switcharoo[roo.id]
+            query = roo.issues
+            for issue in query:
+                tracker[issue.id] = True
+        return tracker
+
     def verify(self):
         """Verify roos until we have one last good roo"""
         with db_session:
@@ -228,7 +240,6 @@ class SwitcharooLog:
                 offset += 10
 
     def sync_issues(self):
-        from core.issues import issues_list
         with db_session:
             for i, issue_type in enumerate(issues_list):
                 q = select(r for r in Issues if r.type == issue_type['type'])
