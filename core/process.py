@@ -10,8 +10,22 @@ issues = GetIssues.get()
 
 
 def process(reddit, submission, last_switcharoo, action):
+    # First, add this submission to the database
+    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, roo_issues=[issues.submission_processing],
+                              time=datetime.utcfromtimestamp(submission.created_utc))
+
+    action, last_good_submission = check_errors(reddit, submission, last_switcharoo, action, roo, init_db=True)
+    if action:
+        action.act(submission, last_good_submission)
+        last_switcharoo.update(roo, roo_issues=action.issues, remove_issues=[issues.submission_processing])
+    else:
+        last_switcharoo.update(roo, remove_issues=[issues.submission_processing])
+
+
+def check_errors(reddit, submission, last_switcharoo, action, roo, init_db=False):
     """
     Check the submission to make sure it is correct
+    :param init_db:
     :param last_switcharoo:
     :param reddit: PRAW reddit instance
     :param submission: post to check
@@ -21,110 +35,87 @@ def process(reddit, submission, last_switcharoo, action):
     :return:
     """
 
+    # Ignore announcements
+    if submission.distinguished:
+        return None
+
     # Verify it is a link post (not a self post)
     if submission.is_self:
         # If meta, determine if it was incorrectly submitted as meta
         if not parse.is_meta_title(submission.title):
             if parse.only_reddit_url(submission.selftext):
                 action.add_issue(submission_is_meta)
-                action.act(submission)
-        roo = last_switcharoo.add(submission.id, link_post=False, time=datetime.utcfromtimestamp(submission.created_utc))
-        return
-
-    # Ignore announcements
-    if submission.distinguished:
-        return
+                return action
+        return None
 
     # Verify it is a link to a reddit thread
     # If not, assume it's a faulty submission and delete.
     if submission.domain[-10:] != "reddit.com":
         action.add_issue(submission_not_reddit)
-        action.act(submission)
-        return
+        return action
 
     print("Roo:", submission.title)
 
     # It's a roo, add it to the list of all roos
     # Mark it as unfinished in processing in case the roo doesn't finish getting processed
-    roo = last_switcharoo.add(submission.id, roo_issues=[issues.submission_processing], time=datetime.utcfromtimestamp(submission.created_utc))
 
     # Redo next three checks with regex
 
-    regex = parse.REPatterns.reddit_strict_parse.findall(submission.url)
+    submission_url = parse.RedditURL(submission.url)
 
     # Some URLs may not pass the stricter check, probably because they did something wrong
-    if not regex:
+    if not submission_url.is_reddit_url:
         action.add_issue(submission_bad_url)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
-
-    url_params = parse.process_url_params(regex[0][-1])
-    print(regex, url_params)
+        return action
 
     # Verify it contains context param
-    if "context" not in url_params:
+    if "context" not in submission_url.params:
         action.add_issue(submission_lacks_context)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
 
     # Try to get the context value
     try:
-        context = int(url_params['context'])
-    except KeyError:  # context is not in URL params
+        context = int(submission_url.params['context'])
+    except (KeyError, ValueError):  # context is not in URL params or not a number
         action.add_issue(submission_lacks_context)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
-    except ValueError:  # context is not a number
-        action.add_issue(submission_lacks_context)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
 
-    last_switcharoo.update(roo, context=context)
+    # If we are in the middle of adding this to the db, add the context amount
+    if init_db:
+        last_switcharoo.update(roo, context=context)
 
     # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
     if submission.url.count("?") > 1:
         action.add_issue(submission_multiple_params)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
 
     # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
     if submission.url.count("?"):
         if "/" in submission.url[submission.url.index("?"):]:
             action.add_issue(submission_link_final_slash)
 
-    # Create object from comment (what the submission is linking to)
-    thread_id, comment_id = parse.thread_url_to_id(submission.url)
-    roo = last_switcharoo.update(roo, thread_id=thread_id, comment_id=comment_id)
-
     # If there was a comment in the link, make the comment object
-    if comment_id:
-        comment = reddit.comment(comment_id)
-    else:   # If there was no comment in the link, take action
+    if submission_url.comment_id:
+        comment = reddit.comment(submission_url.comment_id)
+    else:  # If there was no comment in the link, take action
         action.add_issue(submission_linked_thread)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
+
+    # If we are in the middle of adding this to the db, add the thread and comment ids now
+    if init_db:
+        roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id)
 
     # If comment was deleted, this will make an error. The try alleviates that
     try:
         comment.refresh()
     except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
         action.add_issue(comment_deleted)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
 
     # Deleted comments sometimes don't generate errors
     if comment.body == "[removed]":
         action.add_issue(comment_deleted)
-        action.act(submission, last_switcharoo.last_good(offset=1))
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action, last_switcharoo.last_good(offset=1)
 
     # Get link in comment
     comment_link = parse.parse_comment(comment.body)
@@ -138,15 +129,10 @@ def process(reddit, submission, last_switcharoo, action):
         last_good_submission and yell at them for linking something that isn't a roo.
         """
         action.add_issue(comment_has_no_link)
-        action.act(submission)
-        last_switcharoo.update(roo, roo_issues=action.issues)
-        return
+        return action
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
-    regex = parse.REPatterns.reddit_strict_parse.findall(comment_link)
-    next_thread_id, next_comment_id = parse.thread_url_to_id(comment_link)
-    print("New Regex:", regex)
-    print("Old Regex:", next_thread_id, next_comment_id)
+    comment_url = parse.RedditURL(comment_link)
 
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=1)
@@ -155,26 +141,23 @@ def process(reddit, submission, last_switcharoo, action):
     if last_good_submission:
 
         # Is this switcharoo comment linked to the last good switcharoo?
-        if next_thread_id == last_good_submission.thread_id and \
-                        next_comment_id == last_good_submission.comment_id:
+        if comment_url.thread_id == last_good_submission.thread_id and \
+                comment_url.comment_id == last_good_submission.comment_id:
             # Hooray! Linked to correct comment. Now check for context param
-            url_params = parse.process_url_params(regex[0][-1])
 
             # Verify it contains context param
-            if "context" not in url_params:
+            if "context" not in comment_url.params:
                 action.add_issue(comment_lacks_context)
 
             # Try to get the context value
             try:
-                context = int(url_params['context'])
-            except KeyError:  # context is not in URL params
-                action.add_issue(comment_lacks_context)
-            except ValueError:  # context is not a number
-                action.add_issue(comment_lacks_context) # Should be a different error
+                context = int(comment_url.params['context'])
+            except (KeyError, ValueError):  # context is not a number
+                action.add_issue(comment_lacks_context)  # Should be a different error
 
         else:
             # Was this linked correctly linked to another roo?
-            linked_roo = last_switcharoo.search(next_thread_id, next_comment_id)
+            linked_roo = last_switcharoo.search(comment_url.thread_id, comment_url.comment_id)
             if linked_roo:
                 # User correctly linked, the roo was just bad
                 action.add_issue(comment_linked_bad_roo)
@@ -184,12 +167,8 @@ def process(reddit, submission, last_switcharoo, action):
     else:
         print("Didn't have a last submission to check against")
 
-    action.act(submission, last_good_submission)
+    return action, last_good_submission
 
-    last_switcharoo.update(roo, roo_issues=action.issues, remove_issues=[issues.submission_processing])
-    # last_switcharoo.add_good(submission, thread_id, comment_id)
-
-    return
 
 def process_old(switcharoo):
     pass

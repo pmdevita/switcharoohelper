@@ -34,13 +34,13 @@ else:
 last_switcharoo = SwitcharooLog(reddit)
 last_switcharoo.sync_issues()
 
-
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
     return [i for i in subreddit.new(params={"limit": "1"})][index].id
 
 
-print("SwitcharooHelper v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
+print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
+
 
 while True:
     try:
@@ -55,16 +55,15 @@ while True:
             last_check = get_newest_id(switcharoo, 50)
 
         submissions = []
-        # This "before" is a little confusing, it means before it in the listing but it would be after it time-wise
         for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)}):
             submissions.append(submission)
 
         if submissions:
             print("Processing new submissions...")
 
-            # Reverse the list to be in chronological order and then process every submission
             submissions.reverse()
 
+            # Process every submission
             for submission in submissions:
                 process(reddit, submission, last_switcharoo, action)
                 action.reset()

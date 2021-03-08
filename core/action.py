@@ -14,21 +14,23 @@ class BaseAction:
         """
         :param reddit: PRAW Reddit instance
         """
-        self.issues = []
+        self.issues = set()
         self.reddit = reddit
 
     def add_issue(self, issue):
-        self.issues.append(issue)
+        self.issues.add(issue)
 
     def act(self, submission, last_submission=None):
         if self.issues:
             self.process(submission, last_submission)
+        else:
+            print(" Correct")
 
     def process(self, submission, last_submission=None):
         pass
 
     def reset(self):
-        self.issues = []
+        self.issues = set()
 
 
 class PrintAction(BaseAction):
@@ -70,8 +72,9 @@ class PrintAction(BaseAction):
         if submission_bad_url in self.issues:
             message_lines.append("https://www.reddit.com{} has a malformed URL".format(
                 submission.permalink))
-        for i in message_lines:
-            print(" ", i)
+        if message_lines:
+            for i in message_lines:
+                print(" ", i)
 
 
 class ModAction(BaseAction):

@@ -1,5 +1,6 @@
 from datetime import datetime
-from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, TransactionIntegrityError
+from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, \
+    TransactionIntegrityError
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
@@ -62,9 +63,12 @@ class Issues(db.Entity):
     bad = Required(bool)
     switcharoos = Set(Switcharoo)
 
+
 bind_db(db)
 
 db.generate_mapping(create_tables=True)
+
+
 # set_sql_debug(True)
 
 
@@ -85,7 +89,8 @@ class SwitcharooLog:
                 params[key] = base_params[key]
         return params
 
-    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True, time=None):
+    def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True,
+            time=None):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, link_post=link_post, time=time)
         try:
@@ -103,7 +108,8 @@ class SwitcharooLog:
                         n.issues.add(Issues[i])
         return n
 
-    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[], remove_issues=[], time=None):
+    def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
+               remove_issues=[], time=None):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, time=None)
 
@@ -144,7 +150,9 @@ class SwitcharooLog:
     def last_submission(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.time)).limit(1, offset=offset)
+            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[
+                issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.time)).limit(1,
+                                                                                                         offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -234,6 +242,7 @@ class SwitcharooLog:
                     new = Issues(type=issue_type['type'], id=i, bad=issue_type['bad'])
             commit()
 
+
 if __name__ == '__main__':
     log = SwitcharooLog("asdf")
     # for i in range(5):
@@ -241,4 +250,3 @@ if __name__ == '__main__':
     #     log.add(''.join(random.sample(string.ascii_letters, 7)), ''.join(random.sample(string.ascii_letters, 7)),
     #                     ''.join(random.sample(string.ascii_letters, 7)), random.randrange(5), issues)
     print(log.last_good(), log.last())
-

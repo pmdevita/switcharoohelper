@@ -112,3 +112,18 @@ class GetIssues:
             cls.bad = BadIssues()
         return cls.bad
 
+class Issue:
+    def __init__(self, type, bad):
+        self.type = type
+        self.bad = bad
+        self.has_issue = False # Is there a better name for this?
+
+
+class IssueTracker:
+    def __init__(self):
+        self.issue_dict = {}
+        self.issues = []
+        for i in issues_list:
+            issue = Issue(i['type'], i['bad'])
+            self.issue_dict[i['type']] = issue
+            self.issues.append(issue)
