@@ -1,10 +1,8 @@
 from pprint import pprint
-from datetime import datetime
-
 import praw.exceptions
-
+from datetime import datetime
 from core import parse
-from core.issues import GetIssues, IssueTracker
+from core.issues import IssueTracker
 
 
 def process(reddit, submission, last_switcharoo, action):
@@ -23,6 +21,22 @@ def process(reddit, submission, last_switcharoo, action):
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
 
     last_switcharoo.get_issues(roo)
+
+
+def reprocess(reddit, roo, last_switcharoo, action=None):
+    # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
+    # and secondly to then give instructions to fix
+    old_tracker = last_switcharoo.get_issues(roo)
+    new_tracker = check_errors(reddit, roo.submission, last_switcharoo, roo)
+    if new_tracker.has_issues():
+        # If this is after they were supposed to fix something, gently ask them again
+        # If this was long after they were supposed to fix something and nothing happened, delete the post
+        added, removed = old_tracker.diff(new_tracker)
+    else:
+        pass
+        # If this is after they fixed something, say thank you
+    # After action has been taken on the roo, update the database with the new issue status
+    last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
 
 
 def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
@@ -173,6 +187,3 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
 
     return tracker
 
-
-def process_old(switcharoo):
-    pass

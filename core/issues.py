@@ -148,6 +148,18 @@ class IssueTracker:
                 return True
         return False
 
+    def diff(self, other: "IssueTracker"):
+        issues = super(IssueTracker, self).__getattribute__("issues")
+        other_issues = super(IssueTracker, other).__getattribute__("issues")
+        added = []
+        removed = []
+        for i in range(len(issues)):
+            if issues[i].has_issue and not other_issues[i].has_issue:
+                removed.append(other_issues[i])
+            elif not issues[i].has_issue and other_issues[i].has_issue:
+                added.append(other_issues[i])
+        return added, removed
+
     def __getattr__(self, item):
         return self.issue_dict[item].has_issue
     
