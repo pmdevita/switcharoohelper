@@ -99,7 +99,7 @@ class SwitcharooLog:
             with db_session:
                 n = Switcharoo(**params)
                 for i in roo_issues:
-                    n.issues.add(Issues[i])
+                    n.issues.add(Issues[i.id])
         # Probably already in the db
         except TransactionIntegrityError:
             with db_session:
@@ -107,21 +107,24 @@ class SwitcharooLog:
                 if n:
                     n.set(**params)
                     for i in roo_issues:
-                        n.issues.add(Issues[i])
+                        n.issues.add(Issues[i.id])
         return n
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
-               remove_issues=[], time=None):
+               remove_issues=[], time=None, reset_issues=False):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, time=None)
 
         with db_session:
             roo = Switcharoo[roo.id]
             roo.set(**params)
+            if reset_issues:
+                roo.issues.clear()
+            else:
+                for i in remove_issues:
+                    roo.issues.remove(Issues[i.id])
             for i in roo_issues:
-                roo.issues.add(Issues[i])
-            for i in remove_issues:
-                roo.issues.remove(Issues[i])
+                roo.issues.add(Issues[i.id])
 
         return roo
 

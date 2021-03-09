@@ -91,6 +91,7 @@ class Issues:
         for i, issue in enumerate(issues_list):
             self.__setattr__(issue['type'], i)
 
+
 class BadIssues:
     def __init__(self):
         for i in issues_list:
@@ -114,7 +115,8 @@ class GetIssues:
 
 
 class Issue:
-    def __init__(self, name, bad):
+    def __init__(self, id, name, bad):
+        self.id = id
         self.name = name
         self.bad = bad
         self.has_issue = False  # Is there a better name for this?
@@ -134,14 +136,20 @@ class IssueTracker:
         super(IssueTracker, self).__setattr__("_setup", True)
         self.issue_dict = {}
         self.issues = []
-        for i in issues_list:
-            issue = Issue(i['type'], i['bad'])
+        for index, i in enumerate(issues_list):
+            issue = Issue(index, i['type'], i['bad'])
             self.issue_dict[i['type']] = issue
             self.issues.append(issue)
         self._setup = False
 
+    def has_issues(self):
+        for i in super(IssueTracker, self).__getattribute__("issues"):
+            if i.has_issue:
+                return True
+        return False
+
     def __getattr__(self, item):
-        return self.issue_dict[item]
+        return self.issue_dict[item].has_issue
     
     def __setattr__(self, key, value):
         if super(IssueTracker, self).__getattribute__("_setup"):
@@ -154,6 +162,27 @@ class IssueTracker:
 
     def __contains__(self, item):
         return self.issue_dict[item].has_issue
+
+    def __iter__(self):
+        return IssueTrackerIter(super(IssueTracker, self).__getattribute__("issues"))
+
+
+class IssueTrackerIter:
+    def __init__(self, issues):
+        self.index = 0
+        self.issues = issues
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while self.index < len(self.issues):
+            if self.issues[self.index].has_issue:
+                self.index += 1
+                return self.issues[self.index - 1]
+            else:
+                self.index += 1
+        raise StopIteration
 
 
 if __name__ == '__main__':
