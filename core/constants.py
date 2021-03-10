@@ -25,3 +25,8 @@ class ModActionStrings:
 
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
+
+
+ONLY_BAD = 0
+ONLY_IGNORED = 1
+ALL_ROOS = 2

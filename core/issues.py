@@ -1,3 +1,5 @@
+# Regular issues can be fixed, bad issues are unsolvable and require removing the roo
+
 issues_list = [
     # The submission link does not have a ?context suffix
     {"type": "submission_lacks_context", "bad": True},
@@ -42,7 +44,10 @@ issues_list = [
     {"type": "submission_processing", "bad": False},
 
     # The submission's URL is malformed in some unknown way
-    {"type": "submission_bad_url", "bad": False},
+    {"type": "submission_bad_url", "bad": True},
+
+    # The user ignored the bot and did not fix the roo
+    {"type": "user_noncompliance", "bad": True}
 ]
 
 
@@ -105,6 +110,12 @@ class IssueTracker:
     def has_issues(self):
         for i in super(IssueTracker, self).__getattribute__("issues"):
             if i.has_issue:
+                return True
+        return False
+
+    def has_bad_issues(self):
+        for i in super(IssueTracker, self).__getattribute__("issues"):
+            if i.has_issue and i.bad:
                 return True
         return False
 

@@ -4,7 +4,7 @@ import traceback
 import prawcore.exceptions
 
 from core.credentials import get_credentials, CredentialsLoader
-from core import process
+from core.process import reprocess
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
@@ -42,50 +42,37 @@ def get_newest_id(subreddit, index=0):
 print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
 
-while True:
-    try:
-        # Update the switcharoo log for any deleted posts
-        last_switcharoo.verify()
-        # Then grab the newest's submission ID
-        last_check = last_switcharoo.last_submission()
-        # If there is not one, grab the second newest submission (so that we start with the next, the newest)
-        if last_check:
-            last_check = last_check.submission_id
-        else:
-            last_check = get_newest_id(switcharoo, 50)
+# while True:
+try:
+    # Mark all bad roos (or unmark bad roos)
+    roos = last_switcharoo.get_roos()
+    for roo in roos:
+        reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_BAD)
 
-        submissions = []
-        for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)}):
-            submissions.append(submission)
+    # Now remove ignored posts
+    # for roo in roos:
+    #     reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_IGNORED)
 
-        if submissions:
-            print("Processing new submissions...")
+    # Everything should be updated, perform full actions
+    for roo in roos:
+        reprocess(reddit, roo, last_switcharoo, action, consts.ALL_ROOS)
 
-            submissions.reverse()
+    # time.sleep(consts.sleep_time)
 
-            # Process every submission
-            for submission in submissions:
-                process(reddit, submission, last_switcharoo, action)
-                action.reset()
+except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
+    print("Unable to connect to Reddit, is the internet down?")
+    time.sleep(consts.sleep_time * 2)
 
-            print("Checked up to", submissions[len(submissions) - 1].id)
-            # save_last_data(last_data, last_switcharoo)
-        time.sleep(consts.sleep_time)
+except prawcore.exceptions.ResponseException as e:
+    print("weird other exceptions?", e)
+    time.sleep(consts.sleep_time * 2)
 
-    except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
-        print("Unable to connect to Reddit, is the internet down?")
-        time.sleep(consts.sleep_time * 2)
+except KeyboardInterrupt:
+    print("\nExiting...")
+    # break
 
-    except prawcore.exceptions.ResponseException as e:
-        print("weird other exceptions?", e)
-        time.sleep(consts.sleep_time * 2)
-
-    except KeyboardInterrupt:
-        print("\nExiting...")
-        break
-
-    except Exception as e:
-        if mode == "production":
-            reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
-                str(traceback.format_exc()).replace('\n', '\n    ')))
-        raise
+except Exception as e:
+    if mode == "production":
+        reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
+            str(traceback.format_exc()).replace('\n', '\n    ')))
+    raise

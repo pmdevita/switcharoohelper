@@ -4,7 +4,7 @@ import traceback
 import prawcore.exceptions
 
 from core.credentials import get_credentials, CredentialsLoader
-from core import process
+from core.process import process
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction

@@ -1,8 +1,9 @@
 from pprint import pprint
 import praw.exceptions
-from datetime import datetime
+from datetime import datetime, timedelta
 from core import parse
 from core.issues import IssueTracker
+from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 
 
 def process(reddit, submission, last_switcharoo, action):
@@ -14,29 +15,77 @@ def process(reddit, submission, last_switcharoo, action):
                               time=datetime.utcfromtimestamp(submission.created_utc))
 
     tracker = check_errors(reddit, submission, last_switcharoo, roo, init_db=True)
-    if action:
+    if tracker.has_issues():
         action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo))
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
+        last_switcharoo.update_request(roo)
     else:
-        last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
+        last_switcharoo.update(roo, reset_issues=True)
 
     last_switcharoo.get_issues(roo)
 
 
-def reprocess(reddit, roo, last_switcharoo, action=None):
+def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     old_tracker = last_switcharoo.get_issues(roo)
+
     new_tracker = check_errors(reddit, roo.submission, last_switcharoo, roo)
+
+    request = last_switcharoo.check_request(roo)
+
+    # Requests made within the last month have 4 days to respond, requests made a week out have 9
+    grace_period = 4 if roo.time > datetime.now() - timedelta(days=30) else 9
+
+    # If this roo has bad issues, it should be updated immediately to be removed from the chain
+    if new_tracker.has_bad_issues():
+        print("Roo has gone bad")
+        last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
+        # Delete the submission
+        return
+    else:
+        # If this roo was miraculously cured of bad issues
+        if old_tracker.has_bad_issues():
+            # Then reinstate it.
+            last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
+            return
+
+    # # The following requires an action object to proceed, if there is none then finish
+    # if stage == ONLY_BAD:
+    #     return
+
     if new_tracker.has_issues():
         # If this is after they were supposed to fix something, gently ask them again
         # If this was long after they were supposed to fix something and nothing happened, delete the post
         added, removed = old_tracker.diff(new_tracker)
-    else:
-        pass
+        # Has the issue set changed since last time
+        if len(added) == 0 and len(removed) == 0:
+            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
+        elif stage == ALL_ROOS:
+            # New situation, reset the request if it's there
+            if request:
+                request = request.set_attempts(0)
+            # Something has changed. Did we previously have issues too?
+            if old_tracker.has_issues():
+                # Either they fixed and a new issue came up or it's a new issue
+                action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
+            else:
+                # This was working before, the chain might have just changed around them.
+                action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
+        if request:
+            if stage == ALL_ROOS or request.attempts >= 2:
+                request = last_switcharoo.update_request(roo, requests=request.attempts + 1)
+        elif stage == ALL_ROOS:
+            request = last_switcharoo.update_request(roo)
+    elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
+        if old_tracker.has_issues():
+            action.thank_you(roo, award, stage)
+        # If the old one didn't have issues, then nothing has changed, it's fine
+
     # After action has been taken on the roo, update the database with the new issue status
-    last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
+    if stage == ALL_ROOS:
+        last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
 
 
 def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):

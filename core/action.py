@@ -1,6 +1,7 @@
 from random import randrange
 from core.issues import *
 from core.constants import ModActionStrings as MS
+from core.constants import ALL_ROOS
 
 # issues = GetIssues.get()
 # bad_issues = GetIssues.bad()
@@ -26,15 +27,44 @@ class BaseAction:
         else:
             print(" Correct")
 
-    def process(self, issues, submission, last_good_submission=None):
+    def process(self, issues, submission, last_good_submission=None, reminder=False):
         pass
+
+    # I'm sorry
+    def act_again(self, roo, issues, request, grace_period, stage, last_good_submission):
+        if request is None:
+            if stage == ALL_ROOS:
+                # We have never asked them to do anything before, ask nicely
+                self.act(issues, roo.submission, last_good_submission)
+        else:
+            # If it has been some time since we
+            if request.not_responded_in_days(grace_period):
+                if request.attempts == 0 and stage == ALL_ROOS:
+                    # They've never been asked (but this isn't none for some reason), ask nicely
+                    # Not sure if this would even ever fire
+                    self.process(issues, roo.submission, last_good_submission)
+                elif request.attempts == 1 and stage == ALL_ROOS:
+                    # They've been told once, they get one more warning
+                    self.process(issues, roo.submission, last_good_submission, reminder=True)
+                elif request.attempts >= 2:
+                    # Alright pal you're heading out
+                    # Since this should be the same ref, it should get updated back up in process
+                    issues.user_noncompliance = True
+                    self.process(issues, roo.submission, last_good_submission)
+
+    def thank_you(self, roo, award):
+        print(f"Thank you {roo.submission.user} for fixing your roo!")
+        if award:
+            # Gib award
+            pass
+
 
     def reset(self):
         self.issues = set()
 
 
 class PrintAction(BaseAction):
-    def process(self, issues, submission, last_good_submission=None):
+    def process(self, issues, submission, last_good_submission=None, reminder=False):
         message_lines = []
         if issues.submission_lacks_context:
             message_lines.append("https://www.reddit.com{} submission link does not have ?context".format(
@@ -72,13 +102,16 @@ class PrintAction(BaseAction):
         if issues.submission_bad_url:
             message_lines.append("https://www.reddit.com{} has a malformed URL".format(
                 submission.permalink))
+        if issues.user_noncompliance:
+            message_lines.append("https://www.reddit.com{} has ignored bot instruction".format(
+                submission.permalink))
         if message_lines:
             for i in message_lines:
                 print(" ", i)
 
 
 class ModAction(BaseAction):
-    def process(self, issues, submission, last_good_submission=None):
+    def process(self, issues, submission, last_good_submission=None, reminder=False):
         # List of descriptions of every error the roo made
         message_lines = []
         # Do we request the user resubmit the roo?
@@ -150,6 +183,8 @@ class ModAction(BaseAction):
         if issues.submission_bad_url:
             message_lines.append("your URL seems to have either the submission ID or post ID messed up. Did you copy "
                                  "it correctly?")
+        if issues.user_noncompliance:
+            message_lines.append("you have ignored the bot's advice to fix the linking problems. C")
 
         # Choose template based on action
         if action == DELETE:

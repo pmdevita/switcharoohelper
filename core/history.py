@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, \
     TransactionIntegrityError
 from core.credentials import CredentialsLoader
@@ -40,6 +40,7 @@ class Switcharoo(db.Entity):
     context = Optional(int)
     link_post = Required(bool)
     issues = Set('Issues')
+    requests = Optional('FixRequests')
 
     def _link_reddit(self, reddit):
         self.reddit = reddit
@@ -64,6 +65,21 @@ class Issues(db.Entity):
     id = PrimaryKey(int)
     bad = Required(bool)
     switcharoos = Set(Switcharoo)
+
+
+class FixRequests(db.Entity):
+    roo = PrimaryKey(Switcharoo)
+    time = Required(datetime)
+    attempts = Required(int)
+
+    def not_responded_in_days(self, days):
+        return self.time < datetime.now() - timedelta(days=days)
+
+    def set_attempts(self, value):
+        with db_session:
+            r = FixRequests[self.roo.id]
+            r.attempts = value
+            return r
 
 
 bind_db(db)
@@ -146,7 +162,7 @@ class SwitcharooLog:
         roo = None
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time > time).limit(
-                limit=1, offset=0)
+                limit=1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -191,6 +207,19 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
+    def get_roos(self, after_roo=None, after_time=None, limit=50):
+        with db_session:
+            query = select(s for s in Switcharoo)
+            if after_roo or after_time:
+                time = after_time if after_time else after_roo.time
+                query = query.filter(lambda q: q.time < time)
+            query = query.order_by(desc(Switcharoo.time)).limit(limit)
+            roos = list(query)
+        for roo in roos:
+            self._link_reddit(roo)
+        return roos
+
+
     def get_issues(self, roo):
         tracker = IssueTracker()
         with db_session:
@@ -212,6 +241,7 @@ class SwitcharooLog:
                     break
                 for roo in q:
                     self._link_reddit(roo)
+                    # Maybe use check_errors here instead now?
                     try:
                         # If this submission was in the middle of processing
                         if Issues[issues_obj.submission_processing] in roo.issues:
@@ -255,6 +285,22 @@ class SwitcharooLog:
                 else:
                     new = Issues(type=issue_type['type'], id=i, bad=issue_type['bad'])
             commit()
+
+    def check_request(self, roo):
+        with db_session:
+            roo = Switcharoo[roo.id]
+            q = FixRequests.get(roo=roo)
+            return q
+    
+    def update_request(self, roo, time=None, requests=1):
+        with db_session:
+            roo = Switcharoo[roo.id]
+            q = FixRequests.get(roo=roo)
+            if q:
+                return q
+            else:
+                r = FixRequests(roo=roo, time=datetime.now(), attempts=requests)
+                return r
 
 
 if __name__ == '__main__':
