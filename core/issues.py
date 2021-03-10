@@ -47,7 +47,7 @@ issues_list = [
     {"type": "submission_bad_url", "bad": True},
 
     # The user ignored the bot and did not fix the roo
-    {"type": "user_noncompliance", "bad": True}
+    {"type": "user_noncompliance", "bad": True},
 ]
 
 
@@ -66,6 +66,7 @@ class BadIssues:
 class GetIssues:
     issues = None
     bad_issues = None
+
     @classmethod
     def get(cls):
         if not cls.issues:
@@ -133,7 +134,7 @@ class IssueTracker:
 
     def __getattr__(self, item):
         return self.issue_dict[item].has_issue
-    
+
     def __setattr__(self, key, value):
         if super(IssueTracker, self).__getattribute__("_setup"):
             return super(IssueTracker, self).__setattr__(key, value)

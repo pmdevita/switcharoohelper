@@ -1,6 +1,6 @@
 bot_name = "SwitcharooHelper"
 version = "2.1.0"
-user_agent = f"{bot_name} v{version} by /u/pmdevita v{version}"
+user_agent = f"{bot_name} v{version} by /u/pmdevita"
 sleep_time = 120
 sleep_time_test = 10
 settled_check = 60 * 60 * 24 * 4
@@ -9,6 +9,11 @@ settled_check = 60 * 60 * 24 * 4
 class ModActionStrings:
     header = "{} First, thank you for contributing to /r/switcharoo! The sub only exists thanks to people " \
              "such as yourself who are willing to put the time in to keep the chain going. \n\n"
+
+    new_issue_header = "{} It looks like there has been some changes to switcharoo chain around your comment. " \
+                       "Could you help fix the following issues? Thank you! \n\n"
+
+    reminder_header = "{} It looks like you haven't fixed these issues quite yet. "
 
     resubmit_text = "Your switcharoo does still seem like it could be added to the chain. First, reread " \
                     "the sidebar and if you need to, the [wiki](https://www.reddit.com/r/switcharoo/wiki/index). " \

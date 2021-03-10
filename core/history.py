@@ -79,7 +79,14 @@ class FixRequests(db.Entity):
         with db_session:
             r = FixRequests[self.roo.id]
             r.attempts = value
+            r.time = datetime.now()
             return r
+
+    def reset(self):
+        with db_session:
+            r = FixRequests[self.roo.id]
+            r.delete()
+        return None
 
 
 bind_db(db)
@@ -209,7 +216,7 @@ class SwitcharooLog:
 
     def get_roos(self, after_roo=None, after_time=None, limit=50):
         with db_session:
-            query = select(s for s in Switcharoo)
+            query = select(s for s in Switcharoo if s.link_post)
             if after_roo or after_time:
                 time = after_time if after_time else after_roo.time
                 query = query.filter(lambda q: q.time < time)
@@ -297,10 +304,24 @@ class SwitcharooLog:
             roo = Switcharoo[roo.id]
             q = FixRequests.get(roo=roo)
             if q:
-                return q
+                q.set(self._params_without_none(time=time, requests=requests))
             else:
                 r = FixRequests(roo=roo, time=datetime.now(), attempts=requests)
                 return r
+
+    def reset_request(self, roo=None, request=None):
+        key = None
+        if roo:
+            key = roo.id
+        elif request:
+            key = request.roo.id
+        else:
+            raise Exception("No object passed")
+        with db_session:
+            r = FixRequests.get(roo=key)
+            if r:
+                r.delete()
+        return None
 
 
 if __name__ == '__main__':

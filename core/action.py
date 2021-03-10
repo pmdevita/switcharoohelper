@@ -30,30 +30,30 @@ class BaseAction:
     def process(self, issues, submission, last_good_submission=None, reminder=False):
         pass
 
-    # I'm sorry
+    # I'm sorry for the name
     def act_again(self, roo, issues, request, grace_period, stage, last_good_submission):
-        if request is None:
-            if stage == ALL_ROOS:
-                # We have never asked them to do anything before, ask nicely
-                self.act(issues, roo.submission, last_good_submission)
+        # If it has been some time since we
+        if request.not_responded_in_days(grace_period) or request.attempts == 0:
+            if request.attempts >= 3:
+                # Alright pal you're heading out
+                # Since this should be the same ref, it should get updated back up in process
+                issues.user_noncompliance = True
+                self.process(issues, roo.submission, last_good_submission)
+                request.reset()
+            elif request.attempts == 0 and stage == ALL_ROOS:
+                # They've never been asked (but this isn't none for some reason), ask nicely
+                # Not sure if this would even ever fire
+                self.process(issues, roo.submission, last_good_submission)
+                request.set_attempts(request.attempts + 1)
+            elif stage == ALL_ROOS:
+                # They've been told once, they get one more warning
+                self.process(issues, roo.submission, last_good_submission, reminder=True)
+                request.set_attempts(request.attempts + 1)
         else:
-            # If it has been some time since we
-            if request.not_responded_in_days(grace_period):
-                if request.attempts == 0 and stage == ALL_ROOS:
-                    # They've never been asked (but this isn't none for some reason), ask nicely
-                    # Not sure if this would even ever fire
-                    self.process(issues, roo.submission, last_good_submission)
-                elif request.attempts == 1 and stage == ALL_ROOS:
-                    # They've been told once, they get one more warning
-                    self.process(issues, roo.submission, last_good_submission, reminder=True)
-                elif request.attempts >= 2:
-                    # Alright pal you're heading out
-                    # Since this should be the same ref, it should get updated back up in process
-                    issues.user_noncompliance = True
-                    self.process(issues, roo.submission, last_good_submission)
+            print("Still waiting on cooldown")
 
     def thank_you(self, roo, award):
-        print(f"Thank you {roo.submission.user} for fixing your roo!")
+        print(f"Thank you {roo.submission.author} for fixing your roo! {roo.submission.permalink}")
         if award:
             # Gib award
             pass
@@ -184,7 +184,8 @@ class ModAction(BaseAction):
             message_lines.append("your URL seems to have either the submission ID or post ID messed up. Did you copy "
                                  "it correctly?")
         if issues.user_noncompliance:
-            message_lines.append("you have ignored the bot's advice to fix the linking problems. C")
+            message_lines.append("you have ignored the request to fix the linking problems. Contact the moderators "
+                                 "to have your post reinstated.")
 
         # Choose template based on action
         if action == DELETE:

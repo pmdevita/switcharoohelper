@@ -16,9 +16,9 @@ def process(reddit, submission, last_switcharoo, action):
 
     tracker = check_errors(reddit, submission, last_switcharoo, roo, init_db=True)
     if tracker.has_issues():
-        action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo))
+        action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo, offset=1))
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
-        last_switcharoo.update_request(roo)
+        last_switcharoo.update_request(roo, requests=1)
     else:
         last_switcharoo.update(roo, reset_issues=True)
 
@@ -28,20 +28,24 @@ def process(reddit, submission, last_switcharoo, action):
 def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
+    print(f"Roo: {roo.submission.title} by {roo.submission.author} {datetime.fromtimestamp(roo.submission.created_utc)}")
     old_tracker = last_switcharoo.get_issues(roo)
 
     new_tracker = check_errors(reddit, roo.submission, last_switcharoo, roo)
 
     request = last_switcharoo.check_request(roo)
 
-    # Requests made within the last month have 4 days to respond, requests made a week out have 9
-    grace_period = 4 if roo.time > datetime.now() - timedelta(days=30) else 9
+    # Requests made within the last month have 3 days to respond, requests made a week out have 7
+    grace_period = 3 if roo.time > datetime.now() - timedelta(days=30) else 7
 
     # If this roo has bad issues, it should be updated immediately to be removed from the chain
     if new_tracker.has_bad_issues():
-        print("Roo has gone bad")
+        if old_tracker.has_bad_issues():
+            print("Roo was already bad")
+        else:
+            print("Roo has gone bad")
+            # Delete the submission
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
-        # Delete the submission
         return
     else:
         # If this roo was miraculously cured of bad issues
@@ -50,38 +54,42 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
             return
 
-    # # The following requires an action object to proceed, if there is none then finish
-    # if stage == ONLY_BAD:
-    #     return
-
     if new_tracker.has_issues():
         # If this is after they were supposed to fix something, gently ask them again
         # If this was long after they were supposed to fix something and nothing happened, delete the post
         added, removed = old_tracker.diff(new_tracker)
         # Has the issue set changed since last time
         if len(added) == 0 and len(removed) == 0:
-            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
+            print("Issues unchanged")
+            if not request:
+                request = last_switcharoo.update_request(roo, requests=0)
+            # If we are within cooldown, remind them and increase remind count
+            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=1))
         elif stage == ALL_ROOS:
+            print("Roo issues have changed")
             # New situation, reset the request if it's there
             if request:
-                request = request.set_attempts(0)
+                request = last_switcharoo.reset_request(request=request)
+            request = last_switcharoo.update_request(roo, requests=0)
             # Something has changed. Did we previously have issues too?
+            # If we are within cooldown, remind them and increase remind count
             if old_tracker.has_issues():
                 # Either they fixed and a new issue came up or it's a new issue
-                action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
+                action.act_again(roo, new_tracker, request, grace_period, stage,
+                                 last_switcharoo.last_good(roo, offset=1))
             else:
                 # This was working before, the chain might have just changed around them.
-                action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo))
-        if request:
-            if stage == ALL_ROOS or request.attempts >= 2:
-                request = last_switcharoo.update_request(roo, requests=request.attempts + 1)
-        elif stage == ALL_ROOS:
-            request = last_switcharoo.update_request(roo)
+                action.act_again(roo, new_tracker, request, grace_period, stage,
+                                 last_switcharoo.last_good(roo, offset=1))
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
-            action.thank_you(roo, award, stage)
-        # If the old one didn't have issues, then nothing has changed, it's fine
+            action.thank_you(roo, award)
+        else:
+            # If the old one didn't have issues, then nothing has changed, it's fine
+            print("Correct")
+    else:
+        print("Correct")
 
     # After action has been taken on the roo, update the database with the new issue status
     if stage == ALL_ROOS:
@@ -121,10 +129,13 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
         tracker.submission_not_reddit = True
         return tracker
 
-    print("Roo:", submission.title)
+    if init_db:
+        print(f"Roo: {submission.title} by {submission.author}")
 
     # It's a roo, add it to the list of all roos
-    # Mark it as unfinished in processing in case the roo doesn't finish getting processed
+
+    if submission.author == None or submission.banned_at_utc is not None:
+        tracker.submission_deleted = True
 
     # Redo next three checks with regex
 
@@ -202,7 +213,7 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
     comment_url = parse.RedditURL(comment_link)
 
     # We'll need the last verified good switcharoo from here on
-    last_good_submission = last_switcharoo.last_good(before_roo=roo)
+    last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=1)
 
     # check if there is a last good submission to verify against
     if last_good_submission:
