@@ -47,7 +47,7 @@ try:
     # Mark all bad roos (or unmark bad roos)
     roos = last_switcharoo.get_roos()
     for roo in roos:
-        reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_BAD)
+        reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
 
     # Now remove ignored posts
     # for roo in roos:
@@ -55,7 +55,7 @@ try:
 
     # Everything should be updated, perform full actions
     for roo in roos:
-        reprocess(reddit, roo, last_switcharoo, action, consts.ALL_ROOS)
+        reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
 
     # time.sleep(consts.sleep_time)
 
