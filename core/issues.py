@@ -150,6 +150,13 @@ class IssueTracker:
     def __iter__(self):
         return IssueTrackerIter(super(IssueTracker, self).__getattribute__("issues"))
 
+    def __len__(self):
+        size = 0
+        for i in super(IssueTracker, self).__getattribute__("issues"):
+            if i.has_issue:
+                size += 1
+        return size
+
 
 class IssueTrackerIter:
     def __init__(self, issues):

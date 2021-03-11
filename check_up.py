@@ -45,9 +45,9 @@ print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.vers
 # while True:
 try:
     # Mark all bad roos (or unmark bad roos)
-    print("Checking for deleted/bad roos")
     roos = last_switcharoo.get_roos()
     while roos:
+        print("\nChecking for deleted/bad roos\n")
         for roo in roos:
             reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
 
@@ -56,11 +56,11 @@ try:
         #     reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_IGNORED)
 
         # Everything should be updated, perform full actions
-        print("Sending fix requests")
+        print("\nSending fix requests\n")
         for roo in roos[:-2]:
             reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
 
-        roos = last_switcharoo.get_roos(after_roo=roos[-2])
+        roos = last_switcharoo.get_roos(after_roo=roos[-3])
 
     # time.sleep(consts.sleep_time)
 

@@ -13,22 +13,25 @@ def process(reddit, submission, last_switcharoo, action):
     roo = last_switcharoo.add(submission.id, link_post=not submission.is_self,
                               roo_issues=tracker,
                               time=datetime.utcfromtimestamp(submission.created_utc))
-
+    # Create an issue tracker made from it's errors
     tracker = check_errors(reddit, submission, last_switcharoo, roo, init_db=True)
+
+    # If it has issues, perform an action to correct it
     if tracker.has_issues():
         action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo, offset=0))
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
-        last_switcharoo.update_request(roo, requests=1)
+        if not tracker.has_bad_issues():
+            last_switcharoo.update_request(roo, requests=1)
     else:
         last_switcharoo.update(roo, reset_issues=True)
-
-    last_switcharoo.get_issues(roo)
 
 
 def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
-    print(f"Roo: {roo.submission.title} by {roo.submission.author} {datetime.fromtimestamp(roo.submission.created_utc)}")
+    if stage == ALL_ROOS:
+        print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
+              f" {datetime.fromtimestamp(roo.submission.created_utc)}")
     old_tracker = last_switcharoo.get_issues(roo)
 
     new_tracker = check_errors(reddit, roo.submission, last_switcharoo, roo)
@@ -41,8 +44,12 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
     # If this roo has bad issues, it should be updated immediately to be removed from the chain
     if new_tracker.has_bad_issues():
         if old_tracker.has_bad_issues():
+            print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
+                  f" {datetime.fromtimestamp(roo.submission.created_utc)}")
             print("Roo was already bad")
         else:
+            print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
+                  f" {datetime.fromtimestamp(roo.submission.created_utc)}")
             print("Roo has gone bad")
             # Delete the submission
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
@@ -51,6 +58,7 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
         # If this roo was miraculously cured of bad issues
         if old_tracker.has_bad_issues():
             # Then reinstate it.
+            print("Roo was miraculously cured of bad issues")
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
             return
 
@@ -88,8 +96,6 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine
             print("Correct")
-    else:
-        print("Correct")
 
     # After action has been taken on the roo, update the database with the new issue status
     if stage == ALL_ROOS:
