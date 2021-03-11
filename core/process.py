@@ -16,7 +16,7 @@ def process(reddit, submission, last_switcharoo, action):
 
     tracker = check_errors(reddit, submission, last_switcharoo, roo, init_db=True)
     if tracker.has_issues():
-        action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo, offset=1))
+        action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo, offset=0))
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
         last_switcharoo.update_request(roo, requests=1)
     else:
@@ -64,7 +64,7 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
             if not request:
                 request = last_switcharoo.update_request(roo, requests=0)
             # If we are within cooldown, remind them and increase remind count
-            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=1))
+            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
             # New situation, reset the request if it's there
@@ -76,11 +76,11 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
             if old_tracker.has_issues():
                 # Either they fixed and a new issue came up or it's a new issue
                 action.act_again(roo, new_tracker, request, grace_period, stage,
-                                 last_switcharoo.last_good(roo, offset=1))
+                                 last_switcharoo.last_good(roo, offset=0))
             else:
                 # This was working before, the chain might have just changed around them.
                 action.act_again(roo, new_tracker, request, grace_period, stage,
-                                 last_switcharoo.last_good(roo, offset=1))
+                                 last_switcharoo.last_good(roo, offset=0))
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
@@ -112,7 +112,7 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
 
     # Ignore announcements
     if submission.distinguished:
-        return None
+        return tracker
 
     # Verify it is a link post (not a self post)
     if submission.is_self:
@@ -121,7 +121,7 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
             if parse.only_reddit_url(submission.selftext):
                 tracker.submission_is_meta = True
                 return tracker
-        return None
+        return tracker
 
     # Verify it is a link to a reddit thread
     # If not, assume it's a faulty submission and delete.
@@ -213,7 +213,7 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
     comment_url = parse.RedditURL(comment_link)
 
     # We'll need the last verified good switcharoo from here on
-    last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=1)
+    last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=0)
 
     # check if there is a last good submission to verify against
     if last_good_submission:

@@ -30,6 +30,8 @@ def bind_db(db):
     else:
         raise Exception("No database configuration")
 
+    return creds['type']
+
 
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
@@ -40,7 +42,7 @@ class Switcharoo(db.Entity):
     context = Optional(int)
     link_post = Required(bool)
     issues = Set('Issues')
-    requests = Optional('FixRequests')
+    requests = Optional('FixRequests', cascade_delete=True)
 
     def _link_reddit(self, reddit):
         self.reddit = reddit
@@ -89,7 +91,7 @@ class FixRequests(db.Entity):
         return None
 
 
-bind_db(db)
+db_type = bind_db(db)
 
 db.generate_mapping(create_tables=True)
 
@@ -151,13 +153,27 @@ class SwitcharooLog:
 
         return roo
 
+    def get_roo(self, roo_id):
+        with db_session:
+            r = Switcharoo.get(id=roo_id)
+            return r
+
+    def delete_roo(self, roo_id):
+        with db_session:
+            r = Switcharoo.get(id=roo_id)
+            if r:
+                r.delete()
+
     # Used to set offset to 1 to get last good but was never hooked up properly? IDK why it was done
     def last_good(self, before_roo=None, offset=0):
         time = before_roo.time if before_roo else datetime.now()
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time).order_by(
-                desc(Switcharoo.time)).limit(limit=1, offset=offset)
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time)
+            # SQLite, I love you but why
+            if db_type == "sqlite" and before_roo:
+                q = q.filter(lambda x: x.id != before_roo.id)
+            q = q.order_by(desc(Switcharoo.time)).limit(limit=1, offset=offset)
             if q:
                 roo = q[0]
         if roo:
@@ -170,6 +186,8 @@ class SwitcharooLog:
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time > time).limit(
                 limit=1, offset=offset)
+            if db_type == "sqlite":
+                q = q.filter(lambda x: x.id != after_roo.id)
             if q:
                 roo = q[0]
         if roo:
@@ -220,6 +238,8 @@ class SwitcharooLog:
             if after_roo or after_time:
                 time = after_time if after_time else after_roo.time
                 query = query.filter(lambda q: q.time < time)
+            if db_type == "sqlite" and after_roo:
+                query = query.filter(lambda x: x.id != after_roo.id)
             query = query.order_by(desc(Switcharoo.time)).limit(limit)
             roos = list(query)
         for roo in roos:

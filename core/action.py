@@ -80,10 +80,10 @@ class PrintAction(BaseAction):
                 submission.permalink))
         if issues.comment_linked_wrong:
             message_lines.append("https://www.reddit.com{} comment is not linked to the next level, https://www.reddit."
-                                 "com{}".format(submission.permalink, last_good_submission.comment.permalink))
+                                 "com{}".format(submission.permalink, last_good_submission.submission.url))
         if issues.comment_linked_bad_roo:
             message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not https://www.reddit.com{}"
-                                 .format(submission.permalink, last_good_submission.comment.permalink))
+                                 .format(submission.permalink, last_good_submission.submission.url))
         if issues.comment_lacks_context:
             message_lines.append("https://www.reddit.com{} comment is correct link but did not "
                                  "have ?context in it".format(submission.permalink))
