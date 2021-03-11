@@ -1,3 +1,6 @@
+BLANK = 0
+
+
 class IssueStrings:
     submission_lacks_context = ""
     submission_linked_thread = ""
@@ -13,6 +16,9 @@ class IssueStrings:
     submission_linked_post = ""
     submission_bad_url = ""
     user_noncompliance = ""
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class ModIssueStrings:
@@ -59,9 +65,10 @@ class ModIssueStrings:
                          "Did you copy it correctly?"
     user_noncompliance = "you have ignored the request to fix the linking problems. Contact the moderators "\
                          "to have your post reinstated."
+    submission_deleted = BLANK
 
 
-class ReminderIssues(ModIssueStrings):
+class NewIssueIssues(ModIssueStrings):
     comment_linked_wrong = "link your comment to this link instead? {last_good_url}"
     comment_linked_bad_roo = "link your comment to this link instead? {last_good_url}"
     comment_lacks_context = "add/change the context in your comment's link? It's possible the previous poster left " \
@@ -71,7 +78,7 @@ class ReminderIssues(ModIssueStrings):
                             "replacing x with the number of levels you counted."
 
 
-class MultiReminderIssues(ReminderIssues):
+class MultiNewIssueIssues(NewIssueIssues):
     comment_linked_wrong = "link your comment to this link instead. {last_good_url}"
     comment_linked_bad_roo = "link your comment to this link instead. {last_good_url}"
     comment_lacks_context = "add/change the context in your comment's link. It's possible the previous poster left " \
@@ -96,6 +103,8 @@ class ModActionStrings:
 
     multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
+    thank_you = "Thank you for fixing your switcharoo!"
+
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
 
@@ -110,14 +119,24 @@ class DeleteStrings(ModActionStrings):
     multiple_reason = "Unfortunately, your submission was removed for the following reasons:\n\n{}\n\n"
 
 
-class ReminderStrings(ModActionStrings):
-    issue_strings = ReminderIssues
-    multi_issue_strings = MultiReminderIssues
-    header = "{} It looks like you haven't fixed these issues quite yet."
-    single_reason = "Could you {} Thank you!\n\n"
-    multiple_reason = "Could you do the following for your roo? \n\n{}\n\nThank you!\n\n"
-
-
 class NewIssueStrings(ModActionStrings):
-    header = "{} It looks like there has been some changes to switcharoo chain around your comment. " \
-             "Could you help fix the following issues? Thank you! \n\n"
+    issue_strings = NewIssueIssues
+    multi_issue_strings = MultiNewIssueIssues
+    header = "{} It looks like there has been some changes to switcharoo chain around your comment. "
+    single_reason = "Could you {} Thank you!\n\n"
+    multiple_reason = "Could you do the fix the following in your roo? \n\n{}\n\nThank you!\n\n"
+
+
+class ReminderStrings(NewIssueStrings):
+    header = "{} It looks like you haven't fixed these issues quite yet. "
+
+
+class NewIssueDeleteStrings(DeleteStrings):
+    header = "{}\n\n"
+    single_reason = "Unfortunately,your submission had to be removed because {}\n\n"
+    multiple_reason = "Unfortunately, your submission had to be removed for the following reasons:\n\n{}\n\n"
+
+
+if __name__ == '__main__':
+    print(issubclass(DeleteStrings, DeleteStrings))
+    print(issubclass(DeleteStrings, NewIssueDeleteStrings))

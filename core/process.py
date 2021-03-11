@@ -3,6 +3,7 @@ import praw.exceptions
 from datetime import datetime, timedelta
 from core import parse
 from core.issues import IssueTracker
+from core.strings import NewIssueDeleteStrings
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 
 
@@ -51,7 +52,8 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
             print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
                   f" {datetime.fromtimestamp(roo.submission.created_utc)}")
             print("Roo has gone bad")
-            # Delete the submission
+            action.process(new_tracker, roo.submission, last_switcharoo.last_good(roo, offset=0), mute=True)
+            new_tracker.submission_deleted = True
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return
     else:
@@ -66,6 +68,9 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
         # If this is after they were supposed to fix something, gently ask them again
         # If this was long after they were supposed to fix something and nothing happened, delete the post
         added, removed = old_tracker.diff(new_tracker)
+        if parse.has_responded_to_post(roo.submission) and not request:
+            print("Have previously responded, adding to DB")
+            request = last_switcharoo.update_request(roo, requests=1)
         # Has the issue set changed since last time
         if len(added) == 0 and len(removed) == 0:
             print("Issues unchanged")
@@ -96,6 +101,8 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine
             print("Correct")
+        if request:
+            last_switcharoo.reset_request(request=request)
 
     # After action has been taken on the roo, update the database with the new issue status
     if stage == ALL_ROOS:
@@ -140,7 +147,7 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
 
     # It's a roo, add it to the list of all roos
 
-    if submission.author == None or submission.banned_at_utc is not None:
+    if submission.author is None or submission.banned_at_utc is not None:
         tracker.submission_deleted = True
 
     # Redo next three checks with regex

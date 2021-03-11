@@ -1,6 +1,7 @@
 from random import randrange
+from datetime import datetime
 from core.issues import *
-from core.strings import WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings
+from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, NewIssueDeleteStrings
 from core.constants import ALL_ROOS
 
 # issues = GetIssues.get()
@@ -40,7 +41,7 @@ class BaseAction:
                 # Alright pal you're heading out
                 # Since this should be the same ref, it should get updated back up in process
                 issues.user_noncompliance = True
-                self.process(issues, roo.submission, last_good_submission)
+                self.process(issues, roo.submission, last_good_submission, strings=NewIssueDeleteStrings)
                 request.reset()
             elif request.attempts == 0:
                 if stage == ALL_ROOS:
@@ -117,7 +118,16 @@ class PrintAction(BaseAction):
 
 
 class ModAction(BaseAction):
-    def process(self, issues, submission, last_good_submission=None, strings=None):
+    def thank_you(self, roo, award, reply_object=None):
+        print(f"Thank you {roo.submission.author} for fixing your roo! {roo.submission.permalink}")
+        if not reply_object:
+            reply_object = roo.submission
+        return
+        time = datetime.fromtimestamp(roo.submission.created_utc)
+        if time > datetime(year=2021, month=3, day=0, hour=0, minute=0, second=0):
+            reply_object.reply(ModActionStrings.thank_you + ModActionStrings.footer)
+
+    def process(self, issues, submission, last_good_submission=None, strings=None, mute=False):
         # List of descriptions of every error the roo made
         message_lines = []
         # Do we request the user resubmit the roo?
@@ -138,9 +148,17 @@ class ModAction(BaseAction):
 
         for issue in issues:
             string = getattr(issue_strings, issue.name, None)
+            if string == BLANK:
+                continue
             if not string:
-                raise Exception(f"Unsupported issue for string set {issue_strings.__class__.__name__}")
-            message_lines.append(string.format(last_good_url=last_good_submission.submission.url))
+                raise Exception(f"Unsupported issue {issue.name} for string set {issue_strings}")
+            last_good_url = last_good_submission.submission.url
+            # If we do have context, format the link ourselves with it
+            if last_good_submission.context is not None:
+                if last_good_submission.context > 0:
+                    last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
+                                           f"?context={last_good_submission.context} "
+            message_lines.append(string.format(last_good_url=last_good_url))
 
         # What issues have been raised? Add their messages to the list
         # if issues.submission_lacks_context:
@@ -224,7 +242,7 @@ class ModAction(BaseAction):
 
         # Assemble message
         if len(message_lines) == 1:
-            message = message + strings.reason.format(message_lines[0])
+            message = message + strings.single_reason.format(message_lines[0])
         else:
             reasons = ""
             for i in message_lines:
@@ -235,16 +253,17 @@ class ModAction(BaseAction):
 
         message = message + strings.footer
 
-        # print(message)
+        print(message)
         print("Replying and deleting if true", strings == DeleteStrings)
         # input()
         # Reply and delete (if that is what we are supposed to do)!
 
-        # return
+        return
 
-        comment = submission.reply(message)
-        comment.mod.distinguish()
-        if strings == DeleteStrings:
+        if not mute:
+            comment = submission.reply(message)
+            comment.mod.distinguish()
+        if issubclass(strings, DeleteStrings):
             submission.mod.remove()
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",

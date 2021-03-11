@@ -156,6 +156,8 @@ class SwitcharooLog:
     def get_roo(self, roo_id):
         with db_session:
             r = Switcharoo.get(id=roo_id)
+            if r:
+                self._link_reddit(r)
             return r
 
     def delete_roo(self, roo_id):
@@ -324,7 +326,7 @@ class SwitcharooLog:
             roo = Switcharoo[roo.id]
             q = FixRequests.get(roo=roo)
             if q:
-                q.set(self._params_without_none(time=time, requests=requests))
+                q.set(**self._params_without_none(time=time, requests=requests))
             else:
                 r = FixRequests(roo=roo, time=datetime.now(), attempts=requests)
                 return r

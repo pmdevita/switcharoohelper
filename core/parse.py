@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 """
 Provides different methods to parse Reddit data
@@ -171,6 +172,23 @@ def find_roo_recursive(comment, depth):
 
 def find_roo_comment(comment):
     return find_roo_recursive(comment, 4)
+
+
+# If we have only responded to this in the past, then pretend we already have it in FixRequests
+# If there is a
+def has_responded_to_post(submission):
+    response = False
+    for comment in submission.comments:
+        # This should not be hardcoded but it should also only be "temporary"
+        if comment.author.name == "switcharoohelper":
+            time = datetime.fromtimestamp(comment.created_utc)
+            # If is newer than new update
+            if time > datetime(year=2021, month=3, day=10):
+                # Should already be handled in db
+                return False
+            else:
+                response = True
+    return response
 
 
 if __name__ == '__main__':

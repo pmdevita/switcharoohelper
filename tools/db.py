@@ -10,3 +10,14 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
                      password=credentials["password"])
 
 last_switcharoo = SwitcharooLog(reddit)
+
+
+def roo_id_to_submission(id):
+    roo = last_switcharoo.get_roo(id)
+    print(f"https://reddit.com{roo.submission.permalink}")
+
+def roo_id_to_issues(id):
+    roo = last_switcharoo.get_roo(id)
+    issues = last_switcharoo.get_issues(roo)
+    for i in issues:
+        print(i)
