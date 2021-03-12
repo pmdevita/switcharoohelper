@@ -53,7 +53,7 @@ try:
     # Mark all bad roos (or unmark bad roos)
     if start:
         start = last_switcharoo.get_roo(start)
-    roos = last_switcharoo.get_roos(after_roo=start, limit=10)
+    roos = last_switcharoo.get_roos(after_roo=start, limit=50)
     # while roos:
 
     print("\nChecking for deleted/bad roos\n")

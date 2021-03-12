@@ -36,7 +36,7 @@ class BaseAction:
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0:
             reply_object = ReplyObject.from_roo(roo)
-            if request.attempts >= 3:
+            if request.attempts > 3:
                 # Alright pal you're heading out
                 time = reply_object.created
                 # The date before this went live
@@ -79,43 +79,43 @@ class PrintAction(BaseAction):
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
         message_lines = []
         if issues.submission_lacks_context:
-            message_lines.append("https://www.reddit.com{} submission link does not have ?context".format(
+            message_lines.append("{} submission link does not have ?context".format(
                 reply_object.permalink))
         if issues.submission_linked_thread:
-            message_lines.append("https://www.reddit.com{} linked to a thread, not a comment".format(
+            message_lines.append("{} linked to a thread, not a comment".format(
                 reply_object.permalink))
         if issues.comment_deleted:
-            message_lines.append("https://www.reddit.com{} comment got deleted. Post should be removed.".format(
+            message_lines.append("{} comment got deleted. Post should be removed.".format(
                 reply_object.permalink))
         if issues.comment_has_no_link:
-            message_lines.append("https://www.reddit.com{} has no link in the comment".format(
+            message_lines.append("{} has no link in the comment".format(
                 reply_object.permalink))
         if issues.comment_linked_wrong:
-            message_lines.append("https://www.reddit.com{} comment is not linked to the next level, https://www.reddit."
+            message_lines.append("{} comment is not linked to the next level, https://www.reddit."
                                  "com{}?context={}".format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
         if issues.comment_linked_bad_roo:
-            message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not https://www.reddit.com{}?context={}"
+            message_lines.append("{} comment is linked to bad roo, not https://www.reddit.com{}?context={}"
                                  .format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
         if issues.comment_lacks_context:
-            message_lines.append("https://www.reddit.com{} comment is correct link but did not "
+            message_lines.append("{} comment is correct link but did not "
                                  "have ?context in it".format(reply_object.permalink))
         if issues.submission_multiple_params:
-            message_lines.append("https://www.reddit.com{} had more than one param sections".format(
+            message_lines.append("{} had more than one param sections".format(
                 reply_object.permalink))
         if issues.submission_link_final_slash:
-            message_lines.append("https://www.reddit.com{} had a trailing slash at the end".format(
+            message_lines.append("{} had a trailing slash at the end".format(
                 reply_object.permalink))
         if issues.submission_not_reddit:
-            message_lines.append("https://www.reddit.com{} is not a reddit link.".format(
+            message_lines.append("{} is not a reddit link.".format(
                 reply_object.permalink))
         if issues.submission_is_meta:
-            message_lines.append("https://www.reddit.com{} is a meta post switcharoo".format(
+            message_lines.append("{} is a meta post switcharoo".format(
                 reply_object.permalink))
         if issues.submission_bad_url:
-            message_lines.append("https://www.reddit.com{} has a malformed URL".format(
+            message_lines.append("{} has a malformed URL".format(
                 reply_object.permalink))
         if issues.user_noncompliance:
-            message_lines.append("https://www.reddit.com{} has ignored bot instruction".format(
+            message_lines.append("{} has ignored bot instruction".format(
                 reply_object.permalink))
         if message_lines:
             for i in message_lines:

@@ -1,4 +1,5 @@
 import praw.models
+import praw.exceptions
 from datetime import datetime
 
 class ReplyObject:
@@ -14,19 +15,23 @@ class ReplyObject:
 
     def reply(self, subject, message):
         if isinstance(self.object, praw.models.Submission):
-            comment = self.object.reply(message)
-            comment.mod.distinguish()
+            try:
+                comment = self.object.reply(message)
+                comment.mod.distinguish()
+            except praw.exceptions.RedditAPIException:
+                redditor = self.object.author
+                redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
         elif isinstance(self.object, praw.models.Comment):
             redditor = self.object.author
-            redditor.message(subject=subject, message=message, from_subreddit="switcharoo")
+            redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
 
     def delete(self):
         if isinstance(self.object, praw.models.Submission):
-            self.object.mod.distinguish()
+            self.object.mod.remove()
 
     @property
     def permalink(self):
-        return self.object.permalink
+        return f"https://reddit.com{self.object.permalink}"
 
     @property
     def author(self):
