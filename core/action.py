@@ -36,17 +36,17 @@ class BaseAction:
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0:
             reply_object = ReplyObject.from_roo(roo)
-            if request.attempts > 3:
+            if request.attempts > 2:
                 # Alright pal you're heading out
                 time = reply_object.created
                 # The date before this went live
-                if time > datetime(year=2021, month=3, day=11, hour=0, minute=0, second=0):
+                print("User is non-compliant, deleting unless otherwise mentioned")
+                if time > datetime(year=2021, month=3, day=11, hour=0, minute=0, second=0) or issues.comment_linked_bad_roo or issues.comment_linked_wrong:
                     issues.user_noncompliance = True
                     self.process(issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
                     request.reset()
                 else:
                     print("User is non-compliant, not deleting though")
-                    return
             elif request.attempts == 0:
                 if stage == ALL_ROOS:
                     # They've never been asked (but this isn't none for some reason), ask nicely

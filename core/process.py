@@ -6,6 +6,7 @@ from core.issues import IssueTracker
 from core.strings import NewIssueDeleteStrings
 from core.reddit import ReplyObject
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
+from core.history import SwitcharooLog
 
 
 def process(reddit, submission, last_switcharoo, action):
@@ -28,7 +29,7 @@ def process(reddit, submission, last_switcharoo, action):
         last_switcharoo.update(roo, reset_issues=True)
 
 
-def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD):
+def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, stage=ONLY_BAD):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS:
@@ -118,7 +119,7 @@ def add_comment(reddit, last_switcharoo, link):
                                 datetime.utcfromtimestamp(comment.created_utc))
 
 
-def check_errors(reddit, last_switcharoo, roo, init_db=False, submission=None, comment=None):
+def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, submission=None, comment=None):
     """
     Check the submission to make sure it is correct
     :param comment:
@@ -158,12 +159,24 @@ def check_errors(reddit, last_switcharoo, roo, init_db=False, submission=None, c
 
         # It's a roo, add it to the list of all roos
 
-        if submission.author is None or submission.banned_at_utc is not None:
+        submission_url = parse.RedditURL(submission.url)
+
+        if submission.removed_by_category is not None or submission.banned_at_utc is not None:
             tracker.submission_deleted = True
 
-        # Redo next three checks with regex
+            # Temporary check
+            # Forgive automoderator removals if they mean not sending a fix message
+            if submission.banned_by == "AutoModerator":
+                previous_roo = last_switcharoo.next_good(roo)
+                if previous_roo:
+                    previous_link = parse.parse_comment(previous_roo.comment.body)
+                    previous_link = parse.RedditURL(previous_link)
+                    submission_url = parse.RedditURL(submission.url)
+                    if previous_link.thread_id == submission_url.thread_id \
+                        and previous_link.comment_id == submission_url.comment_id:
+                        print("Previous comment was linked to this one, which was removed by automod")
+                        tracker.submission_deleted = False
 
-        submission_url = parse.RedditURL(submission.url)
 
         # Some URLs may not pass the stricter check, probably because they did something wrong
         if not submission_url.is_reddit_url:

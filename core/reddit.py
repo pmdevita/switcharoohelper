@@ -2,6 +2,7 @@ import praw.models
 import praw.exceptions
 from datetime import datetime
 
+
 class ReplyObject:
     def __init__(self, obj):
         self.object = obj
