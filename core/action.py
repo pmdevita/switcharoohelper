@@ -128,9 +128,9 @@ class ModAction(BaseAction):
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
-        time = datetime.fromtimestamp(roo.submission.created_utc)
+        time = reply_object.created
         if time > datetime(year=2021, month=3, day=1):
-            comment = reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
+            reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):
         # List of descriptions of every error the roo made
