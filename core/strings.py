@@ -91,6 +91,7 @@ class MultiNewIssueIssues(NewIssueIssues):
 class ModActionStrings:
     issue_strings = ModIssueStrings
     multi_issue_strings = None
+    subject = "Help fix the switcharoo chain!"
     header = "{} First, thank you for contributing to /r/switcharoo! The sub only exists thanks to people " \
              "such as yourself who are willing to put the time in to keep the chain going. \n\n"
 
@@ -103,7 +104,7 @@ class ModActionStrings:
 
     multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
-    thank_you = "Thank you for fixing your switcharoo!"
+    thank_you = "Thank you for fixing your switcharoo!\n\n"
 
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
@@ -115,6 +116,7 @@ class WarnStrings(ModActionStrings):
 
 
 class DeleteStrings(ModActionStrings):
+    subject = "Notice about your switcharoo"
     single_reason = "Unfortunately, your submission was removed because {}\n\n"
     multiple_reason = "Unfortunately, your submission was removed for the following reasons:\n\n{}\n\n"
 

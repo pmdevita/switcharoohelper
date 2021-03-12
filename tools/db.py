@@ -1,6 +1,8 @@
 from core.credentials import CredentialsLoader
 from core.history import *
 from core import constants as consts
+from core.action import PrintAction, ModAction
+from core.process import reprocess, check_errors, add_comment
 credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
@@ -10,6 +12,14 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
                      password=credentials["password"])
 
 last_switcharoo = SwitcharooLog(reddit)
+
+# Action object tracks switcharoo and performs a final action (delete/comment)
+mode = CredentialsLoader.get_credentials()['general']['mode']
+
+if mode == 'production':
+    action = ModAction(reddit)
+elif mode == 'development':
+    action = PrintAction(reddit)
 
 
 def roo_id_to_submission(id):

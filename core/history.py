@@ -36,7 +36,7 @@ def bind_db(db):
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
     time = Required(datetime)
-    submission_id = Required(str, unique=True)
+    submission_id = Optional(str, unique=True)
     thread_id = Optional(str)
     comment_id = Optional(str)
     context = Optional(int)
@@ -51,6 +51,8 @@ class Switcharoo(db.Entity):
 
     @property
     def submission(self):
+        if not self.submission_id:
+            return None
         if not self._submission:
             self._submission = self.reddit.submission(self.submission_id)
         return self._submission
@@ -60,6 +62,14 @@ class Switcharoo(db.Entity):
         if not self._comment:
             self._comment = self.reddit.comment(self.comment_id)
         return self._comment
+
+    def print(self):
+        if self.submission_id:
+            print(f"Roo {self.id}: {self.submission.title} by {self.submission.author}"
+                  f" {datetime.fromtimestamp(self.submission.created_utc)}")
+        else:
+            print(f"Roo {self.id}: {self.comment.author}"
+                  f" {datetime.fromtimestamp(self.comment.created_utc)}")
 
 
 class Issues(db.Entity):
@@ -134,6 +144,11 @@ class SwitcharooLog:
                     for i in roo_issues:
                         n.issues.add(Issues[i.id])
         return n
+
+    def add_comment(self, thread_id, comment_id, context, time, roo_issues=[]):
+        with db_session:
+            n = Switcharoo(thread_id=thread_id, comment_id=comment_id, context=context, time=time, link_post=True)
+            return n
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
                remove_issues=[], time=None, reset_issues=False):

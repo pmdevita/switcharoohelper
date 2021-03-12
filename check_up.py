@@ -41,26 +41,38 @@ def get_newest_id(subreddit, index=0):
 
 print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
+print("Give starting ID")
+start = input()
+try:
+    start = int(start)
+except:
+    start = None
 
 # while True:
 try:
     # Mark all bad roos (or unmark bad roos)
-    roos = last_switcharoo.get_roos()
-    while roos:
-        print("\nChecking for deleted/bad roos\n")
-        for roo in roos:
-            reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
+    if start:
+        start = last_switcharoo.get_roo(start)
+    roos = last_switcharoo.get_roos(after_roo=start, limit=10)
+    # while roos:
 
-        # Now remove ignored posts
-        # for roo in roos:
-        #     reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_IGNORED)
+    print("\nChecking for deleted/bad roos\n")
+    for roo in roos:
+        reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
 
-        # Everything should be updated, perform full actions
-        print("\nSending fix requests\n")
-        for roo in roos[:-2]:
-            reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
+    # Now remove ignored posts
+    # for roo in roos:
+    #     reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_IGNORED)
 
-        roos = last_switcharoo.get_roos(after_roo=roos[-3])
+    # Everything should be updated, perform full actions
+    print("\nSending fix requests\n")
+    for roo in roos[:-2]:
+        reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
+
+    print("Final roo was", roos[-3])
+
+    # if roos:
+    #     roos = last_switcharoo.get_roos(after_roo=roos[-3 if len(roos) > 3 else 0])
 
     # time.sleep(consts.sleep_time)
 

@@ -177,13 +177,15 @@ def find_roo_comment(comment):
 # If we have only responded to this in the past, then pretend we already have it in FixRequests
 # If there is a
 def has_responded_to_post(submission):
+    if not submission:
+        return False
     response = False
     for comment in submission.comments:
         # This should not be hardcoded but it should also only be "temporary"
         if comment.author.name == "switcharoohelper":
             time = datetime.fromtimestamp(comment.created_utc)
             # If is newer than new update
-            if time > datetime(year=2021, month=3, day=10):
+            if time > datetime(year=2021, month=3, day=11):
                 # Should already be handled in db
                 return False
             else:

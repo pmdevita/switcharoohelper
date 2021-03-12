@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from core import parse
 from core.issues import IssueTracker
 from core.strings import NewIssueDeleteStrings
+from core.reddit import ReplyObject
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 
 
@@ -15,11 +16,11 @@ def process(reddit, submission, last_switcharoo, action):
                               roo_issues=tracker,
                               time=datetime.utcfromtimestamp(submission.created_utc))
     # Create an issue tracker made from it's errors
-    tracker = check_errors(reddit, submission, last_switcharoo, roo, init_db=True)
+    tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
     # If it has issues, perform an action to correct it
     if tracker.has_issues():
-        action.act(tracker, submission, last_switcharoo.last_good(before_roo=roo, offset=0))
+        action.process(tracker, ReplyObject(submission), last_switcharoo.last_good(before_roo=roo, offset=0))
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
         if not tracker.has_bad_issues():
             last_switcharoo.update_request(roo, requests=1)
@@ -31,11 +32,13 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS:
-        print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
-              f" {datetime.fromtimestamp(roo.submission.created_utc)}")
+        roo.print()
     old_tracker = last_switcharoo.get_issues(roo)
 
-    new_tracker = check_errors(reddit, roo.submission, last_switcharoo, roo)
+    if roo.submission:
+        new_tracker = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
+    else:
+        new_tracker = check_errors(reddit, last_switcharoo, roo, comment=roo.comment)
 
     request = last_switcharoo.check_request(roo)
 
@@ -45,14 +48,12 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
     # If this roo has bad issues, it should be updated immediately to be removed from the chain
     if new_tracker.has_bad_issues():
         if old_tracker.has_bad_issues():
-            print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
-                  f" {datetime.fromtimestamp(roo.submission.created_utc)}")
+            roo.print()
             print("Roo was already bad")
         else:
-            print(f"Roo {roo.id}: {roo.submission.title} by {roo.submission.author}"
-                  f" {datetime.fromtimestamp(roo.submission.created_utc)}")
+            roo.print()
             print("Roo has gone bad")
-            action.process(new_tracker, roo.submission, last_switcharoo.last_good(roo, offset=0), mute=True)
+            action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=True)
             new_tracker.submission_deleted = True
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return
@@ -80,6 +81,7 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
             action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
+            print(added, removed)
             # New situation, reset the request if it's there
             if request:
                 request = last_switcharoo.reset_request(request=request)
@@ -109,9 +111,17 @@ def reprocess(reddit, roo, last_switcharoo, action, award=False, stage=ONLY_BAD)
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
 
 
-def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
+def add_comment(reddit, last_switcharoo, link):
+    url = parse.RedditURL(link)
+    comment = reddit.comment(url.comment_id)
+    last_switcharoo.add_comment(url.thread_id, url.comment_id, url.params['context'],
+                                datetime.utcfromtimestamp(comment.created_utc))
+
+
+def check_errors(reddit, last_switcharoo, roo, init_db=False, submission=None, comment=None):
     """
     Check the submission to make sure it is correct
+    :param comment:
     :param init_db:
     :param last_switcharoo:
     :param reddit: PRAW reddit instance
@@ -123,78 +133,82 @@ def check_errors(reddit, submission, last_switcharoo, roo, init_db=False):
     """
     tracker = IssueTracker()
 
-    # Ignore announcements
-    if submission.distinguished:
-        return tracker
+    if submission:
+        # Ignore announcements
+        if submission.distinguished:
+            return tracker
 
-    # Verify it is a link post (not a self post)
-    if submission.is_self:
-        # If meta, determine if it was incorrectly submitted as meta
-        if not parse.is_meta_title(submission.title):
-            if parse.only_reddit_url(submission.selftext):
-                tracker.submission_is_meta = True
-                return tracker
-        return tracker
+        # Verify it is a link post (not a self post)
+        if submission.is_self:
+            # If meta, determine if it was incorrectly submitted as meta
+            if not parse.is_meta_title(submission.title):
+                if parse.only_reddit_url(submission.selftext):
+                    tracker.submission_is_meta = True
+                    return tracker
+            return tracker
 
-    # Verify it is a link to a reddit thread
-    # If not, assume it's a faulty submission and delete.
-    if submission.domain[-10:] != "reddit.com":
-        tracker.submission_not_reddit = True
-        return tracker
+        # Verify it is a link to a reddit thread
+        # If not, assume it's a faulty submission and delete.
+        if submission.domain[-10:] != "reddit.com":
+            tracker.submission_not_reddit = True
+            return tracker
 
-    if init_db:
-        print(f"Roo: {submission.title} by {submission.author}")
+        if init_db:
+            print(f"Roo: {submission.title} by {submission.author}")
 
-    # It's a roo, add it to the list of all roos
+        # It's a roo, add it to the list of all roos
 
-    if submission.author is None or submission.banned_at_utc is not None:
-        tracker.submission_deleted = True
+        if submission.author is None or submission.banned_at_utc is not None:
+            tracker.submission_deleted = True
 
-    # Redo next three checks with regex
+        # Redo next three checks with regex
 
-    submission_url = parse.RedditURL(submission.url)
+        submission_url = parse.RedditURL(submission.url)
 
-    # Some URLs may not pass the stricter check, probably because they did something wrong
-    if not submission_url.is_reddit_url:
-        tracker.submission_bad_url = True
-        return tracker
+        # Some URLs may not pass the stricter check, probably because they did something wrong
+        if not submission_url.is_reddit_url:
+            tracker.submission_bad_url = True
+            return tracker
 
-    # Verify it contains context param
-    if "context" not in submission_url.params:
-        tracker.submission_lacks_context = True
-        return tracker
+        # Verify it contains context param
+        if "context" not in submission_url.params:
+            tracker.submission_lacks_context = True
+            return tracker
 
-    # Try to get the context value
-    try:
-        context = int(submission_url.params['context'])
-    except (KeyError, ValueError):  # context is not in URL params or not a number
-        tracker.submission_lacks_context = True
-        return tracker
+        # Try to get the context value
+        try:
+            context = int(submission_url.params['context'])
+        except (KeyError, ValueError):  # context is not in URL params or not a number
+            tracker.submission_lacks_context = True
+            return tracker
 
-    # If we are in the middle of adding this to the db, add the context amount
-    if init_db:
-        last_switcharoo.update(roo, context=context)
+        # If we are in the middle of adding this to the db, add the context amount
+        if init_db:
+            last_switcharoo.update(roo, context=context)
 
-    # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
-    if submission.url.count("?") > 1:
-        tracker.submission_multiple_params = True
-        return tracker
+        # Check if it has multiple ? in it (like "?st=JDHTGB67&sh=f66dbbbe?context=3)
+        if submission.url.count("?") > 1:
+            tracker.submission_multiple_params = True
+            return tracker
 
-    # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
-    if submission.url.count("?"):
-        if "/" in submission.url[submission.url.index("?"):]:
-            tracker.submission_link_final_slash = True
+        # Verify it doesn't contain a slash at the end (which ignores the URL params) (Issue #5)
+        if submission.url.count("?"):
+            if "/" in submission.url[submission.url.index("?"):]:
+                tracker.submission_link_final_slash = True
 
-    # If there was a comment in the link, make the comment object
-    if submission_url.comment_id:
-        comment = reddit.comment(submission_url.comment_id)
-    else:  # If there was no comment in the link, take action
-        tracker.submission_linked_thread = True
-        return tracker
+        # If there was a comment in the link, make the comment object
+        if submission_url.comment_id:
+            comment = reddit.comment(submission_url.comment_id)
+        else:  # If there was no comment in the link, take action
+            tracker.submission_linked_thread = True
+            return tracker
 
-    # If we are in the middle of adding this to the db, add the thread and comment ids now
-    if init_db:
-        roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id)
+        # If we are in the middle of adding this to the db, add the thread and comment ids now
+        if init_db:
+            roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id)
+
+    else:
+        roo = last_switcharoo.update(roo, comment_id=comment.id)
 
     # If comment was deleted, this will make an error. The try alleviates that
     try:

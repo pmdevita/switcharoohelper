@@ -3,14 +3,12 @@ from datetime import datetime
 from core.issues import *
 from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, NewIssueDeleteStrings
 from core.constants import ALL_ROOS
+from core.reddit import ReplyObject
 
 # issues = GetIssues.get()
 # bad_issues = GetIssues.bad()
 
-DELETE = 0
 WARN = 1
-REMIND = 2
-
 
 
 class BaseAction:
@@ -30,24 +28,30 @@ class BaseAction:
         else:
             print(" Correct")
 
-    def process(self, issues, submission, last_good_submission=None, strings=None):
+    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
         pass
 
     # I'm sorry for the name
     def act_again(self, roo, issues, request, grace_period, stage, last_good_submission):
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0:
+            reply_object = ReplyObject.from_roo(roo)
             if request.attempts >= 3:
                 # Alright pal you're heading out
-                # Since this should be the same ref, it should get updated back up in process
-                issues.user_noncompliance = True
-                self.process(issues, roo.submission, last_good_submission, strings=NewIssueDeleteStrings)
-                request.reset()
+                time = reply_object.created
+                # The date before this went live
+                if time > datetime(year=2021, month=3, day=11, hour=0, minute=0, second=0):
+                    issues.user_noncompliance = True
+                    self.process(issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
+                    request.reset()
+                else:
+                    print("User is non-compliant, not deleting though")
+                    return
             elif request.attempts == 0:
                 if stage == ALL_ROOS:
                     # They've never been asked (but this isn't none for some reason), ask nicely
                     # Not sure if this would even ever fire
-                    self.process(issues, roo.submission, last_good_submission, strings=NewIssueStrings)
+                    self.process(issues, reply_object, last_good_submission, strings=NewIssueStrings)
                     request.set_attempts(request.attempts + 1)
                 else:
                     # We can get here sometimes when processing for deleted roos
@@ -55,13 +59,14 @@ class BaseAction:
                     request.reset()
             elif stage == ALL_ROOS:
                 # They've been told once, they get one more warning
-                self.process(issues, roo.submission, last_good_submission, strings=ReminderStrings)
+                self.process(issues, reply_object, last_good_submission, strings=ReminderStrings)
                 request.set_attempts(request.attempts + 1)
         else:
             print("Still waiting on cooldown")
 
     def thank_you(self, roo, award):
-        print(f"Thank you {roo.submission.author} for fixing your roo! {roo.submission.permalink}")
+        reply_object = ReplyObject.from_roo(roo)
+        print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
         if award:
             # Gib award
             pass
@@ -71,63 +76,63 @@ class BaseAction:
 
 
 class PrintAction(BaseAction):
-    def process(self, issues, submission, last_good_submission=None, strings=None):
+    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
         message_lines = []
         if issues.submission_lacks_context:
             message_lines.append("https://www.reddit.com{} submission link does not have ?context".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.submission_linked_thread:
             message_lines.append("https://www.reddit.com{} linked to a thread, not a comment".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.comment_deleted:
             message_lines.append("https://www.reddit.com{} comment got deleted. Post should be removed.".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.comment_has_no_link:
             message_lines.append("https://www.reddit.com{} has no link in the comment".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.comment_linked_wrong:
             message_lines.append("https://www.reddit.com{} comment is not linked to the next level, https://www.reddit."
-                                 "com{}?context={}".format(submission.permalink, last_good_submission.comment.permalink, last_good_submission.context))
+                                 "com{}?context={}".format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
         if issues.comment_linked_bad_roo:
             message_lines.append("https://www.reddit.com{} comment is linked to bad roo, not https://www.reddit.com{}?context={}"
-                                 .format(submission.permalink, last_good_submission.comment.permalink, last_good_submission.context))
+                                 .format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
         if issues.comment_lacks_context:
             message_lines.append("https://www.reddit.com{} comment is correct link but did not "
-                                 "have ?context in it".format(submission.permalink))
+                                 "have ?context in it".format(reply_object.permalink))
         if issues.submission_multiple_params:
             message_lines.append("https://www.reddit.com{} had more than one param sections".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.submission_link_final_slash:
             message_lines.append("https://www.reddit.com{} had a trailing slash at the end".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.submission_not_reddit:
             message_lines.append("https://www.reddit.com{} is not a reddit link.".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.submission_is_meta:
             message_lines.append("https://www.reddit.com{} is a meta post switcharoo".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.submission_bad_url:
             message_lines.append("https://www.reddit.com{} has a malformed URL".format(
-                submission.permalink))
+                reply_object.permalink))
         if issues.user_noncompliance:
             message_lines.append("https://www.reddit.com{} has ignored bot instruction".format(
-                submission.permalink))
+                reply_object.permalink))
         if message_lines:
             for i in message_lines:
                 print(" ", i)
 
 
 class ModAction(BaseAction):
-    def thank_you(self, roo, award, reply_object=None):
-        print(f"Thank you {roo.submission.author} for fixing your roo! {roo.submission.permalink}")
+    def thank_you(self, roo, award, reply_object: ReplyObject = None):
         if not reply_object:
-            reply_object = roo.submission
-        return
-        time = datetime.fromtimestamp(roo.submission.created_utc)
-        if time > datetime(year=2021, month=3, day=0, hour=0, minute=0, second=0):
-            reply_object.reply(ModActionStrings.thank_you + ModActionStrings.footer)
+            reply_object = ReplyObject.from_roo(roo)
+        print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
-    def process(self, issues, submission, last_good_submission=None, strings=None, mute=False):
+        time = datetime.fromtimestamp(roo.submission.created_utc)
+        if time > datetime(year=2021, month=3, day=1):
+            comment = reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
+
+    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):
         # List of descriptions of every error the roo made
         message_lines = []
         # Do we request the user resubmit the roo?
@@ -258,13 +263,10 @@ class ModAction(BaseAction):
         # input()
         # Reply and delete (if that is what we are supposed to do)!
 
-        return
-
         if not mute:
-            comment = submission.reply(message)
-            comment.mod.distinguish()
+            reply_object.reply(strings.subject, message)
         if issubclass(strings, DeleteStrings):
-            submission.mod.remove()
+            reply_object.delete()
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
         #                                                 "{}".format(submission.url))
