@@ -46,8 +46,9 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
     # Requests made within the last month have 3 days to respond, requests made a week out have 7
     grace_period = 3 if roo.time > datetime.now() - timedelta(days=30) else 7
 
-    # If this roo has bad issues, it should be updated immediately to be removed from the chain
-    if new_tracker.has_bad_issues():
+    # If this roo has bad issues or it was marked for noncompliance,
+    # it should be updated immediately to be removed from the chain
+    if new_tracker.has_bad_issues() or old_tracker.user_noncompliance:
         if old_tracker.has_bad_issues():
             roo.print()
             print("Roo was already bad")

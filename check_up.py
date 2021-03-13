@@ -42,20 +42,20 @@ def get_newest_id(subreddit, index=0):
 print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
 start = None
-# print("Give starting ID")
-# start = input()
-# try:
-#     start = int(start)
-# except:
-#     start = None
+print("Give starting ID")
+start = input()
+try:
+    start = int(start)
+except:
+    start = None
 
-while True:
-    try:
-        # Mark all bad roos (or unmark bad roos)
-        if start:
-            start = last_switcharoo.get_roo(start)
-        roos = last_switcharoo.get_roos(after_roo=start, limit=50)
-        # while roos:
+try:
+    # Mark all bad roos (or unmark bad roos)
+    if start:
+        start = last_switcharoo.get_roo(start)
+    roos = last_switcharoo.get_roos(after_roo=start, limit=50)
+
+    while roos:
 
         print("\nChecking for deleted/bad roos\n")
         for roo in roos:
@@ -75,22 +75,21 @@ while True:
         if roos:
             roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0])
 
-        # time.sleep(consts.sleep_time)
+    # time.sleep(consts.sleep_time)
 
-    except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
-        print("Unable to connect to Reddit, is the internet down?")
-        time.sleep(consts.sleep_time * 2)
+except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
+    print("Unable to connect to Reddit, is the internet down?")
+    time.sleep(consts.sleep_time * 2)
 
-    except prawcore.exceptions.ResponseException as e:
-        print("weird other exceptions?", e)
-        time.sleep(consts.sleep_time * 2)
+except prawcore.exceptions.ResponseException as e:
+    print("weird other exceptions?", e)
+    time.sleep(consts.sleep_time * 2)
 
-    except KeyboardInterrupt:
-        print("\nExiting...")
-        break
+except KeyboardInterrupt:
+    print("\nExiting...")
 
-    except Exception as e:
-        if mode == "production":
-            reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
-                str(traceback.format_exc()).replace('\n', '\n    ')))
-        raise
+except Exception as e:
+    if mode == "production":
+        reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
+            str(traceback.format_exc()).replace('\n', '\n    ')))
+    raise

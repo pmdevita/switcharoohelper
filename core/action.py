@@ -3,7 +3,7 @@ from datetime import datetime
 from core.issues import *
 from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, NewIssueDeleteStrings
 from core.constants import ALL_ROOS
-from core.reddit import ReplyObject
+from core.reddit import ReplyObject, UserDoesNotExist
 
 # issues = GetIssues.get()
 # bad_issues = GetIssues.bad()
@@ -129,7 +129,7 @@ class ModAction(BaseAction):
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         time = reply_object.created
-        if time > datetime(year=2021, month=3, day=1):
+        if time > datetime(year=2020, month=10, day=1):
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):
@@ -264,7 +264,13 @@ class ModAction(BaseAction):
         # Reply and delete (if that is what we are supposed to do)!
 
         if not mute:
-            reply_object.reply(strings.subject, message)
+            try:
+                reply_object.reply(strings.subject, message)
+            except UserDoesNotExist:
+                # Posts that don't have a user attached to them anymore are OK unless we need to change things
+                # That gets detected here. We then log the issue and then it will get picked up next run
+                print("Tried to fix a submission with no user, marking as noncompliant")
+                issues.user_noncompliance = True
         if issubclass(strings, DeleteStrings):
             reply_object.delete()
         # if request_assistance:
