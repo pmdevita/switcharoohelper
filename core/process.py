@@ -176,8 +176,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                     submission_url = parse.RedditURL(submission.url)
                     if previous_link.thread_id == submission_url.thread_id \
                         and previous_link.comment_id == submission_url.comment_id:
-                        print("Previous comment was linked to this one, which was removed by automod")
+                        print(f"{roo.id} Previous comment was linked to this one, which was removed by automod")
                         tracker.submission_deleted = False
+                    else:
+                        print(f"{roo.id} Banned by automoderator but previous comment isn't linked to it so leaving as is")
 
 
         # Some URLs may not pass the stricter check, probably because they did something wrong
@@ -300,8 +302,8 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 else:
                     print("Ignoring bad context cause it's old")
 
-            if datetime(year=2021, month=3, day=10) > datetime.fromtimestamp(submission.created_utc):
-                if tracker.submission_deleted:
+            if tracker.submission_deleted:
+                if datetime(year=2021, month=3, day=10) > datetime.fromtimestamp(submission.created_utc):
                     # Check if previous comment is linked to it
                     previous_roo = last_switcharoo.next_good(roo)
                     if previous_roo:
@@ -310,8 +312,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                         submission_url = parse.RedditURL(submission.url)
                         if previous_link.thread_id == submission_url.thread_id \
                                 and previous_link.comment_id == submission_url.comment_id:
-                            print(f"Previous comment was linked to {roo.id} so I'm leaving it intact as well")
+                            print(f"{roo.id} Previous comment links to it and it's not causing trouble, keeping")
                             tracker.submission_deleted = False
+                        else:
+                            print(f"{roo.id} Could be alright but previous roo is not linked to it so keeping deleted")
 
         else:
             # Was this linked correctly linked to another roo?

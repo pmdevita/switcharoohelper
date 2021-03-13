@@ -36,7 +36,7 @@ def bind_db(db):
 class Switcharoo(db.Entity):
     id = PrimaryKey(int, auto=True)
     time = Required(datetime)
-    submission_id = Optional(str, unique=True)
+    submission_id = Optional(str, unique=True, nullable=True)
     thread_id = Optional(str)
     comment_id = Optional(str)
     context = Optional(int)
@@ -147,7 +147,8 @@ class SwitcharooLog:
 
     def add_comment(self, thread_id, comment_id, context, time, roo_issues=[]):
         with db_session:
-            n = Switcharoo(thread_id=thread_id, comment_id=comment_id, context=context, time=time, link_post=True)
+            n = Switcharoo(thread_id=thread_id, comment_id=comment_id, context=context, time=time, link_post=True,
+                           submission_id=None)
             return n
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],

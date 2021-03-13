@@ -130,7 +130,10 @@ class NewIssueStrings(ModActionStrings):
 
 
 class ReminderStrings(NewIssueStrings):
-    header = "{} It looks like you haven't fixed these issues quite yet. "
+    header = "{}  "
+    single_reason = "It looks like you haven't quite fixed this yet. Could you {} Thank you!\n\n"
+    multiple_reason = "It looks like you haven't quite fixed these issues yet. Could you do the fix " \
+                      "the following in your roo? \n\n{}\n\nThank you!\n\n"
 
 
 class NewIssueDeleteStrings(DeleteStrings):
