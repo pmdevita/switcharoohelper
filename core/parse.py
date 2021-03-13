@@ -12,24 +12,42 @@ class REPatterns:
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
     REDDIT_PATTERN = "http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
+    SHORT_REDDIT_PATTERN = "(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
     reddit_strict_parse = re.compile("^{}$".format(REDDIT_PATTERN))
     reddit_detect = re.compile(REDDIT_PATTERN)
+    short_reddit_strict_parse = re.compile("^{}$".format(SHORT_REDDIT_PATTERN))
+    short_reddit_detect = re.compile(SHORT_REDDIT_PATTERN)
+
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
 
 class RedditURL:
+    @classmethod
+    def from_regex(cls, regex):
+        a = cls("")
+        a._regex = regex
+        a._regex_to_props()
+        return a
+
     def __init__(self, url):
+        self.is_reddit_url = False
+        self.thread_id = None
+        self.comment_id = None
+        self.params = {}
+
         self._regex = REPatterns.reddit_strict_parse.findall(url)
+        self._regex_to_props()
+
+    def _regex_to_props(self):
         if self._regex:
             self.is_reddit_url = True
             self.thread_id = self._regex[0][3] if self._regex[0][3] else None
             self.comment_id = self._regex[0][4] if self._regex[0][4] else None
             self.params = process_url_params(self._regex[0][6]) if self._regex[0][6] else {}
-        else:
-            self.is_reddit_url = False
-            self.thread_id = None
-            self.comment_id = None
-            self.params = {}
+
+    def __str__(self):
+        return f"RedditURL({self.thread_id}-{self.comment_id})"
+
 
 
 def process_url_params(url_params):
@@ -93,11 +111,17 @@ def parse_comment(text):
         for i in matches:
             match = REPatterns.reddit_detect.findall(i[1])
             if match:
-                return i[1].strip()
+                return RedditURL(i[1].strip())
+            match = REPatterns.short_reddit_detect.findall(i[1])
+            if match:
+                return RedditURL(i[1].strip())
     # Search for just general URLs in the comment
-    matches = REPatterns.reddit_detect.match(text)
+    matches = REPatterns.reddit_detect.findall(text)
     if matches:
-        return matches[0]
+        return RedditURL.from_regex(matches)
+    matches = REPatterns.short_reddit_detect.findall(text)
+    if matches:
+        return RedditURL.from_regex(matches)
     return None
 
 
@@ -194,9 +218,8 @@ def has_responded_to_post(submission):
 
 
 if __name__ == '__main__':
-    # print(REPatterns.reddit_strict_parse.findall("https://www.reddit.com/r/Wellthatsucks/comments/edc61l/ive\_been\_saving\_up\_for\_a\_switch\_for\_a\_couple/fbhggjf?context=2"))
-    # print(process_url_params("context=2&asdf=asdf"))
-    # print(only_reddit_url("[this](https://www.reddit.com/r/marvelstudios/comments/bwqij1/wonder_how_these_users_are_feeling_right_about_now/eq0maab/?context=5) step links to [this one](https://www.reddit.com/r/NoStupidQuestions/comments/bwn8pz/would_i_be_able_to_kill_a_polar_bear_with_an_ak47/epz1f9s/?context=1) which is now deleted and seemingly a https://www.reddit.com/r/marvelstudios/comments/bwqij1/wonder_how_these_users_are_feeling_right_about_now/eq0maab/?context=5 deleted user as well.\n\nmy journey ended early\n\n:("))
-    # print(only_reddit_url("https://www.reddit.com/r/Wellthatsucks/comments/edc61l/ive\_been\_saving\_up\_for\_a\_switch\_for\_a\_couple/fbhggjf?context=2"))
-    r = RedditURL("https://www.reddit.com/r/hmm/")
-    print(r)
+    print(parse_comment("""Ah, the ol' reddit [Kondo(m)-a-roo][1]!
+
+Edit: I'm not sure why the link seems to be displaying wrongly for some of you. Maybe its the (m) in the hyperlink? 
+
+[1]: https://www.reddit.com/r/JordanPeterson/comments/exjfvw/cop_trolls_antifa/fg9vz7g?context=3"""))

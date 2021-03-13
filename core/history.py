@@ -233,7 +233,7 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
-    def search(self, thread_id=None, comment_id=None, submission_id=None):
+    def search(self, thread_id=None, comment_id=None, submission_id=None, multiple=False):
         roo = None
         with db_session:
             query = select(s for s in Switcharoo)
@@ -243,10 +243,16 @@ class SwitcharooLog:
                 query = query.filter(lambda q: q.comment_id == comment_id)
             if submission_id:
                 query = query.filter(lambda q: q.submission_id == submission_id)
-            if query:
+            if query and not multiple:
                 roo = query.first()
+            else:
+                roo = list(query)
         if roo:
-            self._link_reddit(roo)
+            if multiple:
+                for i in roo:
+                    self._link_reddit(i)
+            else:
+                self._link_reddit(roo)
         return roo
 
     def get_roos(self, after_roo=None, after_time=None, limit=50):

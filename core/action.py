@@ -4,6 +4,10 @@ from core.issues import *
 from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, NewIssueDeleteStrings
 from core.constants import ALL_ROOS
 from core.reddit import ReplyObject, UserDoesNotExist
+from core.credentials import CredentialsLoader
+
+creds = CredentialsLoader.get_credentials()['general']
+dry_run = creds['dry_run'].lower() != "false"
 
 # issues = GetIssues.get()
 # bad_issues = GetIssues.bad()
@@ -34,7 +38,7 @@ class BaseAction:
     # I'm sorry for the name
     def act_again(self, roo, issues, request, grace_period, stage, last_good_submission):
         # If it has been some time since we
-        if request.not_responded_in_days(grace_period) or request.attempts == 0:
+        if request.not_responded_in_days(grace_period) or request.attempts == 0 or dry_run:
             reply_object = ReplyObject.from_roo(roo)
             if request.attempts > 2:
                 # Alright pal you're heading out
@@ -129,7 +133,7 @@ class ModAction(BaseAction):
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         time = reply_object.created
-        if time > datetime(year=2020, month=10, day=1):
+        if time > datetime(year=2021, month=3, day=1):
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):

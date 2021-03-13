@@ -1,6 +1,10 @@
 import praw.models
 import praw.exceptions
 from datetime import datetime
+from core.credentials import CredentialsLoader
+
+creds = CredentialsLoader.get_credentials()['general']
+
 
 
 class UserDoesNotExist(Exception):
@@ -11,6 +15,7 @@ class ReplyObject:
     def __init__(self, obj):
         self.object = obj
         self.roo = None
+        self.dry_run = creds['dry_run'].lower() != "false"
 
     @classmethod
     def from_roo(cls, roo):
@@ -22,6 +27,9 @@ class ReplyObject:
         return a
 
     def reply(self, subject, message):
+        if self.dry_run:
+            return
+
         if isinstance(self.object, praw.models.Submission):
             try:
                 comment = self.object.reply(message)
@@ -34,12 +42,17 @@ class ReplyObject:
                         if redditor is None:
                             raise UserDoesNotExist
                     raise UserDoesNotExist
-                redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
+                link = self.permalink
+                if self.roo:
+                    link = f"https://reddit.com{self.roo.comment.permalink}"
+                redditor.message(subject=subject, message=f"{link}\n\n{message}", from_subreddit="switcharoo")
         elif isinstance(self.object, praw.models.Comment):
             redditor = self.object.author
             redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
 
     def delete(self):
+        if self.dry_run:
+            return
         if isinstance(self.object, praw.models.Submission):
             self.object.mod.remove()
 

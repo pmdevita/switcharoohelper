@@ -26,8 +26,30 @@ def roo_id_to_submission(id):
     roo = last_switcharoo.get_roo(id)
     print(f"https://reddit.com{roo.submission.permalink}")
 
+
 def roo_id_to_issues(id):
     roo = last_switcharoo.get_roo(id)
     issues = last_switcharoo.get_issues(roo)
     for i in issues:
         print(i)
+
+
+def roo_id_to_current_issues(id):
+    roo = last_switcharoo.get_roo(id)
+    issues = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
+    for i in issues:
+        print(i)
+
+
+def last_good_of_roo_id(id):
+    roo = last_switcharoo.get_roo(id)
+    return last_switcharoo.last_good(roo)
+
+
+def roo_id_info(id):
+    roo_id_to_submission(id)
+    print("DB issues")
+    roo_id_to_issues(id)
+    print("Current issues")
+    roo_id_to_current_issues(id)
+    print("Last good:", last_good_of_roo_id(id))

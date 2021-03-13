@@ -63,7 +63,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
         # If this roo was miraculously cured of bad issues
         if old_tracker.has_bad_issues():
             # Then reinstate it.
-            print("Roo was miraculously cured of bad issues")
+            print(f"Roo {roo.id} was miraculously cured of bad issues")
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
             return
 
@@ -162,7 +162,8 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         submission_url = parse.RedditURL(submission.url)
 
-        if submission.removed_by_category is not None or submission.banned_at_utc is not None:
+        if submission.removed_by_category is not None or submission.banned_at_utc is not None \
+                or submission.selftext == "[deleted]":
             tracker.submission_deleted = True
 
             # Temporary check
@@ -171,7 +172,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 previous_roo = last_switcharoo.next_good(roo)
                 if previous_roo:
                     previous_link = parse.parse_comment(previous_roo.comment.body)
-                    previous_link = parse.RedditURL(previous_link)
+                    # previous_link = parse.RedditURL(previous_link)
                     submission_url = parse.RedditURL(submission.url)
                     if previous_link.thread_id == submission_url.thread_id \
                         and previous_link.comment_id == submission_url.comment_id:
@@ -236,6 +237,24 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         tracker.comment_deleted = True
         return tracker
 
+    # If the comment's author still exist, don't worry about a deleted submission
+    # NEVERMIND NEVER DO THIS
+    if submission and tracker.submission_deleted:
+        if comment.author is not None and submission.banned_at_utc is not None:
+            print("THIS ONE RIGHT HERE")
+            print(f"{roo.id} https://reddit.com{submission.permalink} {submission.author}")
+            print(f"https://reddit.com{comment.permalink}")
+            print(last_switcharoo.search(submission_url.thread_id, multiple=True))
+            print(parse.RedditURL(f"https://reddit.com{submission.permalink}").thread_id)
+            print(submission_url.thread_id)
+            # input()
+
+        if comment.author is not None and submission.banned_at_utc is None:
+            print("Maybe keep this one???")
+            print(f"{roo.id} https://reddit.com{submission.permalink} {submission.author}")
+            print(f"https://reddit.com{comment.permalink}")
+            # input()
+
     # Get link in comment
     comment_link = parse.parse_comment(comment.body)
 
@@ -251,7 +270,8 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         return tracker
 
     # What comment and thread does this submission's switcharoo link to? It should be the last good one
-    comment_url = parse.RedditURL(comment_link)
+    # comment_url = parse.RedditURL(comment_link)
+    comment_url = comment_link
 
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=0)
@@ -266,20 +286,63 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
             # Verify it contains context param
             if "context" not in comment_url.params:
-                tracker.comment_lacks_context = True
+                if datetime(year=2021, month=3, day=10) < datetime.fromtimestamp(submission.created_utc):
+                    tracker.comment_lacks_context = True
+                else:
+                    print("Ignoring bad context cause it's old")
 
             # Try to get the context value
             try:
                 context = int(comment_url.params['context'])
             except (KeyError, ValueError):  # context is not a number
-                tracker.comment_lacks_context = True  # Should be a different error
+                if datetime(year=2021, month=3, day=10) < datetime.fromtimestamp(submission.created_utc):
+                    tracker.comment_lacks_context = True  # Should be a different error
+                else:
+                    print("Ignoring bad context cause it's old")
+
+            if datetime(year=2021, month=3, day=10) > datetime.fromtimestamp(submission.created_utc):
+                if tracker.submission_deleted:
+                    # Check if previous comment is linked to it
+                    previous_roo = last_switcharoo.next_good(roo)
+                    if previous_roo:
+                        previous_link = parse.parse_comment(previous_roo.comment.body)
+                        # previous_link = parse.RedditURL(previous_link)
+                        submission_url = parse.RedditURL(submission.url)
+                        if previous_link.thread_id == submission_url.thread_id \
+                                and previous_link.comment_id == submission_url.comment_id:
+                            print(f"Previous comment was linked to {roo.id} so I'm leaving it intact as well")
+                            tracker.submission_deleted = False
 
         else:
             # Was this linked correctly linked to another roo?
             linked_roo = last_switcharoo.search(comment_url.thread_id, comment_url.comment_id)
             if linked_roo:
                 # User correctly linked, the roo was just bad
-                tracker.comment_linked_bad_roo = True
+                # If this is a problematic old roo, don't touch it unless we have to
+                if datetime(year=2021, month=3, day=10) > datetime.fromtimestamp(submission.created_utc):
+                    linked_issues = last_switcharoo.get_issues(linked_roo)
+                    if linked_issues.comment_deleted or linked_issues.comment_has_no_link \
+                            or linked_issues.user_noncompliance:
+                        tracker.comment_linked_bad_roo = True
+                    else:
+                        print(f"{roo.id} is linked to the wrong roo but it's OK so I'm ignoring it")
+                        if tracker.submission_deleted:
+                            # Check if previous comment is linked to it
+                            previous_roo = last_switcharoo.next_good(roo)
+                            if previous_roo:
+                                previous_link = parse.parse_comment(previous_roo.comment.body)
+                                # previous_link = parse.RedditURL(previous_link)
+                                submission_url = parse.RedditURL(submission.url)
+                                if previous_link.thread_id == submission_url.thread_id \
+                                        and previous_link.comment_id == submission_url.comment_id:
+                                    print("Previous comment was linked to this one so I'm leaving that intact as well")
+                                    tracker.submission_deleted = False
+                                else:
+                                    print("However, it was skipped over in the chain so I'm keeping it removed")
+                        else:
+                            print("However, the previous roo isn't linked to it so it'll stay deleted")
+                else:
+                    tracker.comment_linked_bad_roo = True
             else:
                 # I dunno what the user linked but it didn't link the last good or last posted
                 tracker.comment_linked_wrong = True
