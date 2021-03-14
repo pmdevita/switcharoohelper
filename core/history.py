@@ -234,7 +234,7 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
-    def search(self, thread_id=None, comment_id=None, submission_id=None, multiple=False):
+    def search(self, thread_id=None, comment_id=None, submission_id=None, after_time=None, multiple=False, oldest=False):
         roo = None
         with db_session:
             query = select(s for s in Switcharoo)
@@ -244,6 +244,10 @@ class SwitcharooLog:
                 query = query.filter(lambda q: q.comment_id == comment_id)
             if submission_id:
                 query = query.filter(lambda q: q.submission_id == submission_id)
+            if after_time:
+                query = query.filter(lambda q: q.time < after_time)
+            if oldest:
+                query = query.order_by(Switcharoo.time)
             if query and not multiple:
                 roo = query.first()
             else:
@@ -365,6 +369,16 @@ class SwitcharooLog:
             r = FixRequests.get(roo=key)
             if r:
                 r.delete()
+        return None
+
+    def oldest_good(self, offset=0):
+        with db_session:
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
+            q = q.order_by(Switcharoo.time).limit(limit=1, offset=offset)
+            if q:
+                roo = q[0]
+                self._link_reddit(roo)
+                return roo
         return None
 
 

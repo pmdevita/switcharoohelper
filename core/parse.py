@@ -1,4 +1,5 @@
 import re
+import praw.exceptions
 from datetime import datetime
 
 """
@@ -12,7 +13,7 @@ class REPatterns:
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
     REDDIT_PATTERN = "http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
-    SHORT_REDDIT_PATTERN = "(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
+    SHORT_REDDIT_PATTERN = "(/r/|/user/)(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
     reddit_strict_parse = re.compile("^{}$".format(REDDIT_PATTERN))
     reddit_detect = re.compile(REDDIT_PATTERN)
     short_reddit_strict_parse = re.compile("^{}$".format(SHORT_REDDIT_PATTERN))
@@ -36,6 +37,8 @@ class RedditURL:
         self.params = {}
 
         self._regex = REPatterns.reddit_strict_parse.findall(url)
+        if not self._regex:
+            self._regex = REPatterns.short_reddit_strict_parse.findall(url)
         self._regex_to_props()
 
     def _regex_to_props(self):
@@ -48,6 +51,24 @@ class RedditURL:
     def __str__(self):
         return f"RedditURL({self.thread_id}-{self.comment_id})"
 
+    def __eq__(self, other):
+        return self.thread_id == other.thread_id and self.comment_id == other.comment_id
+
+    def to_link(self, reddit):
+        url = "https://reddit.com"
+        try:
+            if self.comment_id:
+                comment = reddit.comment(self.comment_id)
+                url += comment.permalink
+            elif self.thread_id:
+                submission = reddit.submission(self.thread_id)
+                url += submission.permalink
+        except praw.exceptions.ClientException:
+            return None
+        if self.params:
+            url += "?"
+            url += "&".join([f"{i}={self.params[i]}" for i in self.params])
+        return url
 
 
 def process_url_params(url_params):
@@ -122,7 +143,7 @@ def parse_comment(text):
     matches = REPatterns.short_reddit_detect.findall(text)
     if matches:
         return RedditURL.from_regex(matches)
-    return None
+    return RedditURL("")
 
 
 def is_meta_title(title):
@@ -180,22 +201,25 @@ def only_reddit_url(text):
     return False
 
 
-def find_roo_recursive(comment, depth):
+def find_roo_recursive(comment, starting_depth, depth):
     if not depth:
         return None
     url = parse_comment(comment.body)
-    if url:
+    if url.comment_id:
+        url = RedditURL(f"https://reddit.com{comment.permalink}")
+        url.params['context'] = starting_depth - depth
         return url
     else:
         comment.refresh()
         for reply in comment.replies:
-            url = find_roo_recursive(reply, depth - 1)
+            url = find_roo_recursive(reply, starting_depth, depth - 1)
             if url:
                 return url
+    return None
 
 
 def find_roo_comment(comment):
-    return find_roo_recursive(comment, 4)
+    return find_roo_recursive(comment, 4, 4)
 
 
 # If we have only responded to this in the past, then pretend we already have it in FixRequests
@@ -218,8 +242,4 @@ def has_responded_to_post(submission):
 
 
 if __name__ == '__main__':
-    print(parse_comment("""Ah, the ol' reddit [Kondo(m)-a-roo][1]!
-
-Edit: I'm not sure why the link seems to be displaying wrongly for some of you. Maybe its the (m) in the hyperlink? 
-
-[1]: https://www.reddit.com/r/JordanPeterson/comments/exjfvw/cop_trolls_antifa/fg9vz7g?context=3"""))
+    print(parse_comment("""[](/kderpymeow-90-f) Ah, the ol' reddit [third-world-aroo!](https://old.reddit.com/r/interestingasfuck/comments/a9xt2g/you_may_be_cool_but_you_will_never_be_as_cool_as/ecnjvlf/?context=2)"""))
