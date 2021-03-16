@@ -27,6 +27,11 @@ def roo_id_to_submission(id):
     print(f"https://reddit.com{roo.submission.permalink}")
 
 
+def roo_id_to_comment(id):
+    roo = last_switcharoo.get_roo(id)
+    print(f"https://reddit.com{roo.comment.permalink}")
+
+
 def roo_id_to_issues(id):
     roo = last_switcharoo.get_roo(id)
     issues = last_switcharoo.get_issues(roo)

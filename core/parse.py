@@ -1,7 +1,9 @@
 import re
 import praw.exceptions
 from datetime import datetime
-
+from core.pushshift import get_original_comment_from_psaw, get_comment_from_psaw
+import urllib.parse
+import praw.models
 """
 Provides different methods to parse Reddit data
 """
@@ -130,12 +132,13 @@ def parse_comment(text):
     if matches:
         # Now check for a reddit link
         for i in matches:
-            match = REPatterns.reddit_detect.findall(i[1])
+            url = urllib.parse.unquote(i[1]).replace(" ", "")
+            match = REPatterns.reddit_detect.findall(url)
             if match:
-                return RedditURL(i[1].strip())
-            match = REPatterns.short_reddit_detect.findall(i[1])
+                return RedditURL(url.strip())
+            match = REPatterns.short_reddit_detect.findall(url)
             if match:
-                return RedditURL(i[1].strip())
+                return RedditURL(url.strip())
     # Search for just general URLs in the comment
     matches = REPatterns.reddit_detect.findall(text)
     if matches:
@@ -204,13 +207,21 @@ def only_reddit_url(text):
 def find_roo_recursive(comment, starting_depth, depth):
     if not depth:
         return None
-    url = parse_comment(comment.body)
+    if comment.body == "[deleted]" or comment.body == "[removed]":
+        print("Comment was deleted")
+        url = search_pushshift(comment)
+    else:
+        body = comment.body
+        url = parse_comment(body)
     if url.comment_id:
         url = RedditURL(f"https://reddit.com{comment.permalink}")
         url.params['context'] = starting_depth - depth
         return url
     else:
-        comment.refresh()
+        try:
+            comment.refresh()
+        except praw.exceptions.ClientException:
+            return None
         for reply in comment.replies:
             url = find_roo_recursive(reply, starting_depth, depth - 1)
             if url:
@@ -218,8 +229,33 @@ def find_roo_recursive(comment, starting_depth, depth):
     return None
 
 
+def find_roo_parent_recursive(comment, starting_depth, depth):
+    if not depth:
+        return None
+    if isinstance(comment, praw.models.Submission):
+        return None
+    url = parse_comment(comment.body)
+    if url.comment_id:
+        url = RedditURL(f"https://reddit.com{comment.permalink}")
+        # url.params['context'] = starting_depth - depth
+        return url
+    else:
+        try:
+            comment.refresh()
+        except praw.exceptions.ClientException:
+            return None
+        url = find_roo_parent_recursive(comment.parent(), starting_depth, depth - 1)
+        if url:
+            return url
+    return None
+
 def find_roo_comment(comment):
-    return find_roo_recursive(comment, 4, 4)
+    roo = find_roo_recursive(comment, 4, 4)
+    if roo:
+        return roo
+    roo = find_roo_parent_recursive(comment, 3, 3)
+    if roo:
+        return roo
 
 
 # If we have only responded to this in the past, then pretend we already have it in FixRequests
@@ -239,6 +275,37 @@ def has_responded_to_post(submission):
             else:
                 response = True
     return response
+
+
+def search_pushshift(comment, last_url=None):
+    if not last_url:
+        last_url = RedditURL(f"https://reddit.com{comment.permalink}")
+    print("Searching PushShift for", last_url.comment_id)
+    # psaw leaves a little to be desired in default functionality
+    ps_comment = get_comment_from_psaw(comment.parent_id[3:], last_url.comment_id)
+    if ps_comment:
+        ps_comment = parse_comment(ps_comment['body'])
+    pso_comment = get_original_comment_from_psaw(last_url.comment_id)
+    if pso_comment:
+        pso_comment = parse_comment(pso_comment['body'])
+    if ps_comment and pso_comment:
+        if ps_comment == pso_comment:
+            url = ps_comment
+        else:
+            print("Two versions of comment, which one to use? (1/2)")
+            print(pso_comment.to_link(comment._reddit), ps_comment.to_link(comment._reddit))
+            option = input()
+            if option == "1":
+                url = pso_comment
+            else:
+                url = ps_comment
+    elif ps_comment:
+        url = ps_comment
+    elif pso_comment:
+        url = pso_comment
+    else:
+        url = RedditURL("")
+    return url
 
 
 if __name__ == '__main__':

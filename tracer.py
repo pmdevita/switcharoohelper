@@ -1,9 +1,8 @@
-import requests
-import urllib.parse
 import psaw
 import praw.exceptions
 import time
 import pendulum
+import webbrowser
 from datetime import datetime, timedelta
 
 import prawcore.exceptions
@@ -13,6 +12,7 @@ from core import constants as consts
 from core import parse
 from core.history import SwitcharooLog
 from core.arguments import tracer as argparser
+from core.pushshift import get_comment_from_psaw, get_original_comment_from_psaw
 
 credentials = CredentialsLoader.get_credentials()['reddit']
 
@@ -29,6 +29,7 @@ switcharoo = reddit.subreddit("switcharoo")
 log = SwitcharooLog(reddit)
 
 args = argparser.parse_args()
+
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
@@ -55,33 +56,6 @@ start_url = url
 print("SwitcharooHelper Tracer v{} Ctrl+C to stop".format(consts.version))
 
 
-# Weird other way to get the data but it returns the edited version?
-def get_comment_from_psaw(parent_id, comment_id):
-    params = {'parent_id': f"t1_{parent_id}", "filter": "id,created_utc,edited,body"}
-    # Come on PushShift, percent coding is a standard
-    payload_str = urllib.parse.urlencode(params, safe=",")
-    r = requests.get("https://api.pushshift.io/reddit/comment/search/",
-                     params=payload_str)
-    j = r.json()
-    for i in j['data']:
-        if i['id'] == comment_id:
-            return i
-    return None
-
-
-def get_original_comment_from_psaw(comment_id):
-    params = {'ids': comment_id, "filter": "id,created_utc,body"}
-    # Come on PushShift, percent coding is a standard
-    payload_str =  urllib.parse.urlencode(params, safe=",")
-    r = requests.get("https://api.pushshift.io/reddit/comment/search/",
-                     params=payload_str)
-    j = r.json()
-    if j.get('data', None):
-        if len(j['data']) > 0:
-            return j['data'][0]
-    return None
-
-
 def unable_to_find_link(url: parse.RedditURL, last_url: parse.RedditURL):
     print("Unable to find a link in this roo.")
     print(last_url.to_link(reddit))
@@ -100,35 +74,6 @@ def unable_to_find_link(url: parse.RedditURL, last_url: parse.RedditURL):
     return parse.RedditURL(url)
 
 
-def search_pushshift(last_url):
-    print("Searching PushShift for", last_url.comment_id)
-    # psaw leaves a little to be desired in default functionality
-    ps_comment = get_comment_from_psaw(comment.parent_id[3:], last_url.comment_id)
-    if ps_comment:
-        ps_comment = parse.parse_comment(ps_comment['body'])
-    pso_comment = get_original_comment_from_psaw(last_url.comment_id)
-    if pso_comment:
-        pso_comment = parse.parse_comment(pso_comment['body'])
-    if ps_comment and pso_comment:
-        if ps_comment == pso_comment:
-            url = ps_comment
-        else:
-            print("Two versions of comment, which one to use? (1/2)")
-            print(pso_comment.to_link(reddit), ps_comment.to_link(reddit))
-            option = input()
-            if option == "1":
-                url = pso_comment
-            else:
-                url = ps_comment
-    elif ps_comment:
-        url = ps_comment
-    elif pso_comment:
-        url = pso_comment
-    else:
-        url = parse.RedditURL("")
-    return url
-
-
 def add_comment(url: parse.RedditURL, start_url: parse.RedditURL = None):
     # Double check it's not already there
     q = log.search(comment_id=url.comment_id)
@@ -142,7 +87,13 @@ def add_comment(url: parse.RedditURL, start_url: parse.RedditURL = None):
     if q:
         print("Adjusting roo time")
         comment_time = q.time - timedelta(seconds=1)
-    log.add_comment(url.thread_id, url.comment_id, url.params.get("context", 0), comment_time)
+    try:
+        context = int(url.params.get("context", 0))
+    except ValueError:
+        print(f"Got {url.params['context']} for url {url}, what should it be?")
+        context = int(input())
+
+    log.add_comment(url.thread_id, url.comment_id, context, comment_time)
 
 
 
@@ -171,9 +122,9 @@ while True:
         roo_count += 1
 
         last_url = url
-        if comment.body == "[deleted]":
+        if comment.body == "[deleted]" or comment.body == "[removed]":
             print("Comment was deleted")
-            url = search_pushshift(last_url)
+            url = parse.search_pushshift(comment, last_url)
         else:
             url = parse.parse_comment(comment.body)
 
@@ -182,15 +133,31 @@ while True:
             print("Roo linked incorrectly, searching thread for link")
             new_last_url = parse.find_roo_comment(comment)
             if new_last_url and last_url:
-                new_last_url.params['context'] = str(int(new_last_url.params.get('context', 0)) +
-                                                     int(last_url.params.get('context', 0)))
+                try:
+                    new_last_url.params['context'] = str(int(new_last_url.params.get('context', 0)) +
+                                                         int(last_url.params.get('context', 0)))
+                except ValueError:
+                    print(f"Got {new_last_url.params['context']} and {last_url.params['context']}, what should it be?")
+                    new_last_url.params['context'] = int(input())
             if new_last_url:
-                print(last_url.to_link(reddit), "should actually be", new_last_url.to_link(reddit))
-                last_url = new_last_url
+                if args.discover:
+                    print("Should", last_url.to_link(reddit), "actually be", new_last_url.to_link(reddit), "?")
+                    print("(y/n)")
+                    webbrowser.open(last_url.to_link(reddit))
+                    webbrowser.open(new_last_url.to_link(reddit))
+                    option = input()
+                    if option == "y":
+                        last_url = new_last_url
+                else:
+                    last_url = new_last_url
                 comment = reddit.comment(last_url.comment_id)
-                url = parse.parse_comment(comment.body)
+                if comment.body == "[deleted]" or comment.body == "[removed]":
+                    print("Comment was deleted")
+                    url = parse.search_pushshift(comment, last_url)
+                else:
+                    url = parse.parse_comment(comment.body)
             else:
-                url = search_pushshift(last_url)
+                url = parse.search_pushshift(comment, last_url)
 
         if args.discover:
             add_comment(last_url, start_url=start_url)
