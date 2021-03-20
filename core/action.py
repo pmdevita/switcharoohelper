@@ -273,7 +273,10 @@ class ModAction(BaseAction):
         if strings == DeleteStrings and resubmit:
             message = message + strings.resubmit_text.format("issue" if len(message_lines) == 1 else "issues")
 
-        message = message + strings.footer
+        if reply_object.created < datetime(year=2020, month=6, day=1):
+            message = message + strings.old_footer
+        else:
+            message = message + strings.footer
 
         print(message)
         print("Replying and deleting if true", strings == DeleteStrings)

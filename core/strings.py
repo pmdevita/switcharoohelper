@@ -91,7 +91,7 @@ class MultiNewIssueIssues(NewIssueIssues):
 class ModActionStrings:
     issue_strings = ModIssueStrings
     multi_issue_strings = None
-    subject = "Help fix the switcharoo chain!"
+    subject = "Help needed to fix the switcharoo chain!"
     header = "{} First, thank you for contributing to /r/switcharoo! The sub only exists thanks to people " \
              "such as yourself who are willing to put the time in to keep the chain going. \n\n"
 
@@ -109,6 +109,9 @@ class ModActionStrings:
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
 
+    old_footer = "---\nI am a bot currently fixing the last 10 years of the switcharoo. Reply to report an issue " \
+                 "or ask the mods a question. You can also visit us at r/switcharoo for more information."
+
 
 class WarnStrings(ModActionStrings):
     single_reason = "Unfortunately, {}\n\n"
@@ -125,7 +128,7 @@ class NewIssueStrings(ModActionStrings):
     issue_strings = NewIssueIssues
     multi_issue_strings = MultiNewIssueIssues
     header = "{} It looks like there has been some changes to switcharoo chain around your comment. "
-    single_reason = "Could you {} Thank you!\n\n"
+    single_reason = "Could you {}\n\nThank you!\n\n"
     multiple_reason = "Could you do the fix the following in your roo? \n\n{}\n\nThank you!\n\n"
 
 

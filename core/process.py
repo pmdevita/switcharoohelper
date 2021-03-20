@@ -319,10 +319,12 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=0)
 
+    # Good date info to have on hand in the upcoming checks
+    created = submission if submission else comment
+    created = datetime.fromtimestamp(created.created_utc)
+
     # check if there is a last good submission to verify against
     if last_good_submission:
-        created = submission if submission else comment
-        created = datetime.fromtimestamp(created.created_utc)
         # Is this switcharoo comment linked to the last good switcharoo?
         if comment_url.thread_id == last_good_submission.thread_id and \
                 comment_url.comment_id == last_good_submission.comment_id:
@@ -365,7 +367,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             if linked_roo:
                 # User correctly linked, the roo was just bad
                 # If this is a problematic old roo, don't touch it unless we have to
-                if datetime(year=2021, month=3, day=10) > datetime.fromtimestamp(submission.created_utc):
+                if datetime(year=2021, month=3, day=10) > created:
                     linked_issues = last_switcharoo.get_issues(linked_roo)
                     if linked_issues.comment_deleted or linked_issues.comment_has_no_link \
                             or linked_issues.user_noncompliance:

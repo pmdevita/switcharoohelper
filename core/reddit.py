@@ -54,7 +54,10 @@ class ReplyObject:
         if self.dry_run:
             return
         if isinstance(self.object, praw.models.Submission):
-            self.object.mod.remove()
+            if not self.object.removed_by:
+                self.object.mod.remove()
+            else:
+                print("Not removing since it was already removed")
 
     @property
     def permalink(self):
