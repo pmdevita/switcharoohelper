@@ -58,3 +58,5 @@ def roo_id_info(id):
     print("Current issues")
     roo_id_to_current_issues(id)
     print("Last good:", last_good_of_roo_id(id))
+
+

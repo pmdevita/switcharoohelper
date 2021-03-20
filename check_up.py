@@ -4,7 +4,7 @@ import traceback
 import prawcore.exceptions
 
 from core.credentials import get_credentials, CredentialsLoader
-from core.process import reprocess
+from core.process import reprocess, double_check_link
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
@@ -20,7 +20,7 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
 
 switcharoo = reddit.subreddit("switcharoo")
 
-args = vars(argparser.parse_args())
+args = argparser.parse_args()
 
 # Action object tracks switcharoo and performs a final action (delete/comment)
 mode = CredentialsLoader.get_credentials()['general']['mode']
@@ -44,7 +44,7 @@ def get_newest_id(subreddit, index=0):
 
 print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
 
-start = args['starting_roo']
+start = args.starting_roo
 if not start:
     print("Give starting ID")
     start = input()
@@ -62,7 +62,7 @@ else:
             raise Exception("Unspecified starting roo, not 'last' or a number")
 
 DB_LIMIT = 50
-limit = args['limit']
+limit = args.limit
 if not limit:
     limit = None
 else:
@@ -78,20 +78,27 @@ try:
 
     while roos:
 
-        print("\nChecking for deleted/bad roos\n")
-        for roo in roos:
-            reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
+        if args.double_check_link:
+            print("\nDouble checking links\n")
+            for roo in roos[:-2]:
+                double_check_link(reddit, last_switcharoo, roo)
+
+        if not args.no_delete_check:
+            print("\nChecking for deleted/bad roos\n")
+            for roo in roos:
+                reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
 
         # Now remove ignored posts
         # for roo in roos:
         #     reprocess(reddit, roo, last_switcharoo, action, consts.ONLY_IGNORED)
 
         # Everything should be updated, perform full actions
-        print("\nSending fix requests\n")
-        for roo in roos[:-2]:
-            reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
+        if not args.no_relink:
+            print("\nSending fix requests\n")
+            for roo in roos[:-2]:
+                reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
 
-        # print("Final roo was", roos[-3])
+
 
         if roos:
             roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0],

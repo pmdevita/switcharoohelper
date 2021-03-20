@@ -3,3 +3,5 @@ prawcore
 pendulum
 pony
 psaw
+requests
+regex

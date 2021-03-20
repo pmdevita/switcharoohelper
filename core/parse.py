@@ -1,4 +1,5 @@
 import re
+import regex
 import praw.exceptions
 from datetime import datetime
 from core.pushshift import get_original_comment_from_psaw, get_comment_from_psaw
@@ -14,10 +15,10 @@ class REPatterns:
     link = re.compile("\[(.*?)\] *\n? *\(\s*(.*?)\s*\)")
     reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
     # Newer regex parsers
-    REDDIT_PATTERN = "http(?:s)?://(?:\w+?\.)?reddit.com(/r/|/user/)?(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
-    SHORT_REDDIT_PATTERN = "(/r/|/user/)(?(1)(\w{2,21}))(/comments/)?(?(3)(\w{6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?"
-    reddit_strict_parse = re.compile("^{}$".format(REDDIT_PATTERN))
-    reddit_detect = re.compile(REDDIT_PATTERN)
+    REDDIT_PATTERN = "(?V1)(?i)http(?:s)?://(?:www\.)?(?:[\w-]+?\.)?reddit.com(?-i)(/r/|/user/)?(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
+    SHORT_REDDIT_PATTERN = "(/r/|/user/)(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
+    reddit_strict_parse = regex.compile("^{}$".format(REDDIT_PATTERN))
+    reddit_detect = regex.compile(REDDIT_PATTERN)
     short_reddit_strict_parse = re.compile("^{}$".format(SHORT_REDDIT_PATTERN))
     short_reddit_detect = re.compile(SHORT_REDDIT_PATTERN)
 

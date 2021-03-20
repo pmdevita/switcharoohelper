@@ -48,7 +48,8 @@ class BaseAction:
                 if time > datetime(year=2021, month=3, day=11, hour=0, minute=0, second=0) or issues.comment_linked_bad_roo or issues.comment_linked_wrong:
                     issues.user_noncompliance = True
                     self.process(issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
-                    request.reset()
+                    if not dry_run:
+                        request.reset()
                 else:
                     print("User is non-compliant, not deleting though")
             elif request.attempts == 0:
@@ -56,7 +57,12 @@ class BaseAction:
                     # They've never been asked (but this isn't none for some reason), ask nicely
                     # Not sure if this would even ever fire
                     self.process(issues, reply_object, last_good_submission, strings=NewIssueStrings)
-                    request.set_attempts(request.attempts + 1)
+                    # If we are on a dry run, then delete this already null request
+                    if dry_run:
+                        request.reset()
+                    # Normal behavior
+                    else:
+                        request.set_attempts(request.attempts + 1)
                 else:
                     # We can get here sometimes when processing for deleted roos
                     # Delete this request
@@ -64,7 +70,8 @@ class BaseAction:
             elif stage == ALL_ROOS:
                 # They've been told once, they get one more warning
                 self.process(issues, reply_object, last_good_submission, strings=ReminderStrings)
-                request.set_attempts(request.attempts + 1)
+                if not dry_run:
+                    request.set_attempts(request.attempts + 1)
         else:
             print("Still waiting on cooldown")
 
@@ -161,12 +168,18 @@ class ModAction(BaseAction):
                 continue
             if not string:
                 raise Exception(f"Unsupported issue {issue.name} for string set {issue_strings}")
-            last_good_url = last_good_submission.submission.url
+            last_good_url = None
             # If we do have context, format the link ourselves with it
             if last_good_submission.context is not None:
                 if last_good_submission.context > 0:
                     last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
                                            f"?context={last_good_submission.context} "
+            if not last_good_url:
+                if last_good_submission.submission:
+                    last_good_url = last_good_submission.submission.url
+                else:
+                    last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
+
             message_lines.append(string.format(last_good_url=last_good_url))
 
         # What issues have been raised? Add their messages to the list

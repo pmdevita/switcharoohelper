@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, \
-    TransactionIntegrityError
+    TransactionIntegrityError, count
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
@@ -8,6 +8,10 @@ import prawcore.exceptions
 import random
 import string
 from core.issues import issues_list, IssueTracker
+from core.credentials import CredentialsLoader
+
+creds = CredentialsLoader.get_credentials()['general']
+DRY_RUN = creds['dry_run'].lower() != "false"
 
 issues_obj = GetIssues.get()
 
@@ -112,6 +116,7 @@ db.generate_mapping(create_tables=True)
 class SwitcharooLog:
     def __init__(self, reddit):
         self.reddit = reddit
+        self.stats = SwitcharooStats(reddit)
 
     def _link_reddit(self, roo):
         """Give DB entity a reference to the Reddit object"""
@@ -153,6 +158,8 @@ class SwitcharooLog:
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
                remove_issues=[], time=None, reset_issues=False):
+        if DRY_RUN:
+            return roo
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, time=None)
 
@@ -380,6 +387,21 @@ class SwitcharooLog:
                 self._link_reddit(roo)
                 return roo
         return None
+
+
+class SwitcharooStats:
+    def __init__(self, reddit):
+        self.reddit = reddit
+
+    def num_of_good_roos(self, before=None, after=None):
+        roo = None
+        with db_session:
+            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
+            if before:
+                q = q.filter(lambda x: x.time < before)
+            if after:
+                q = q.filter(lambda x: x.time > after)
+            return count(q)
 
 
 if __name__ == '__main__':

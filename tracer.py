@@ -93,10 +93,7 @@ def add_comment(url: parse.RedditURL, start_url: parse.RedditURL = None):
         print(f"Got {url.params['context']} for url {url}, what should it be?")
         context = int(input())
 
-    log.add_comment(url.thread_id, url.comment_id, context, comment_time)
-
-
-
+    log.add_comment(url.thread_id, url.comment_id, min(context, 10000), comment_time)
 
 
 while True:
@@ -185,4 +182,5 @@ while True:
     except Exception as e:
         print("Roo Count:", roo_count)
         raise e
+
 print("Roo Count:", roo_count)
