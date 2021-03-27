@@ -36,10 +36,9 @@ class BaseAction:
         pass
 
     # I'm sorry for the name
-    def act_again(self, roo, issues, request, grace_period, stage, last_good_submission):
+    def act_again(self, reply_object: ReplyObject, issues, request, grace_period, stage, last_good_submission):
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0 or dry_run:
-            reply_object = ReplyObject.from_roo(roo)
             if request.attempts > 2:
                 # Alright pal you're heading out
                 time = reply_object.created

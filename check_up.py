@@ -18,8 +18,6 @@ reddit = praw.Reddit(client_id=credentials["client_id"],
                      username=credentials["username"],
                      password=credentials["password"])
 
-switcharoo = reddit.subreddit("switcharoo")
-
 args = argparser.parse_args()
 
 # Action object tracks switcharoo and performs a final action (delete/comment)

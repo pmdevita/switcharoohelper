@@ -1,5 +1,6 @@
 from pprint import pprint
 import praw.exceptions
+import prawcore.exceptions
 from datetime import datetime, timedelta
 from core import parse
 from core.issues import IssueTracker
@@ -8,6 +9,7 @@ from core.reddit import ReplyObject
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 from core.history import SwitcharooLog, Switcharoo
 from core.credentials import CredentialsLoader
+import core.operator
 
 creds = CredentialsLoader.get_credentials()['general']
 DRY_RUN = creds['dry_run'].lower() != "false"
@@ -17,7 +19,7 @@ def process(reddit, submission, last_switcharoo, action):
     # First, add this submission to the database
     tracker = IssueTracker()
     tracker.submission_processing = True
-    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self,
+    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name,
                               roo_issues=tracker,
                               time=datetime.utcfromtimestamp(submission.created_utc))
     # Create an issue tracker made from it's errors
@@ -46,6 +48,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
         new_tracker = check_errors(reddit, last_switcharoo, roo, comment=roo.comment)
 
     request = last_switcharoo.check_request(roo)
+    reply_object = ReplyObject.from_roo(roo)
 
     # Requests made within the last month have 3 days to respond, requests made a week out have 7
     grace_period = 3 if roo.time > datetime.now() - timedelta(days=30) else 7
@@ -84,7 +87,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
             if not request:
                 request = last_switcharoo.update_request(roo, requests=0)
             # If we are within cooldown, remind them and increase remind count
-            action.act_again(roo, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
+            action.act_again(reply_object, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
             print(added, removed)
@@ -96,11 +99,11 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
             # If we are within cooldown, remind them and increase remind count
             if old_tracker.has_issues():
                 # Either they fixed and a new issue came up or it's a new issue
-                action.act_again(roo, new_tracker, request, grace_period, stage,
+                action.act_again(reply_object, new_tracker, request, grace_period, stage,
                                  last_switcharoo.last_good(roo, offset=0))
             else:
                 # This was working before, the chain might have just changed around them.
-                action.act_again(roo, new_tracker, request, grace_period, stage,
+                action.act_again(reply_object, new_tracker, request, grace_period, stage,
                                  last_switcharoo.last_good(roo, offset=0))
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
@@ -263,15 +266,25 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # If we are in the middle of adding this to the db, add the thread and comment ids now
         if init_db:
-            roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id)
+            roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id,
+                                         subreddit=submission_url.subreddit)
 
     else:
-        roo = last_switcharoo.update(roo, comment_id=comment.id)
+        # Not sure why this was happening every time
+        # roo = last_switcharoo.update(roo, comment_id=comment.id)
+        if init_db:
+            roo = last_switcharoo.update(roo, comment_id=comment.id)
 
     # If comment was deleted, this will make an error. The try alleviates that
     try:
         comment.refresh()
     except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
+        s = reddit.submission(roo.thread_id)
+        try:
+            subreddit = s.subreddit
+        except prawcore.exceptions.Forbidden:
+            print("Forbidded from post, is the subreddit privated?")
+        print(s.subreddit)
         tracker.comment_deleted = True
         return tracker
 
@@ -280,23 +293,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         tracker.comment_deleted = True
         return tracker
 
-    # If the comment's author still exist, don't worry about a deleted submission
-    # NEVERMIND NEVER DO THIS
-    if submission and tracker.submission_deleted:
-        if comment.author is not None and submission.banned_at_utc is not None:
-            print("THIS ONE RIGHT HERE")
-            print(f"{roo.id} https://reddit.com{submission.permalink} {submission.author}")
-            print(f"https://reddit.com{comment.permalink}")
-            print(last_switcharoo.search(submission_url.thread_id, multiple=True))
-            print(parse.RedditURL(f"https://reddit.com{submission.permalink}").thread_id)
-            print(submission_url.thread_id)
-            # input()
-
-        if comment.author is not None and submission.banned_at_utc is None:
-            print("Maybe keep this one???")
-            print(f"{roo.id} https://reddit.com{submission.permalink} {submission.author}")
-            print(f"https://reddit.com{comment.permalink}")
-            # input()
+    # Todo: Double-check submission author and comment author are the same
 
     # Get link in comment
     comment_link = parse.parse_comment(comment.body)

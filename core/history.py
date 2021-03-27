@@ -45,6 +45,8 @@ class Switcharoo(db.Entity):
     comment_id = Optional(str)
     context = Optional(int)
     link_post = Required(bool)
+    user = Optional(str)
+    subreddit = Optional(str)
     issues = Set('Issues')
     requests = Optional('FixRequests', cascade_delete=True)
 
@@ -63,6 +65,8 @@ class Switcharoo(db.Entity):
 
     @property
     def comment(self):
+        if not self.comment_id:
+            return None
         if not self._comment:
             self._comment = self.reddit.comment(self.comment_id)
         return self._comment
@@ -105,6 +109,12 @@ class FixRequests(db.Entity):
         return None
 
 
+class PrivatedSubs(db.Entity):
+    subreddit = PrimaryKey(str)
+    status = Required(int)
+    expiration = Optional(datetime)
+
+
 db_type = bind_db(db)
 
 db.generate_mapping(create_tables=True)
@@ -132,9 +142,10 @@ class SwitcharooLog:
         return params
 
     def add(self, submission_id, thread_id=None, comment_id=None, context=None, roo_issues=[], link_post=True,
-            time=None):
+            time=None, user=None, subreddit=None):
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
-                                           context=context, link_post=link_post, time=time)
+                                           context=context, link_post=link_post, time=time, user=user,
+                                           subreddit=subreddit)
         try:
             with db_session:
                 n = Switcharoo(**params)
@@ -154,14 +165,16 @@ class SwitcharooLog:
         with db_session:
             n = Switcharoo(thread_id=thread_id, comment_id=comment_id, context=context, time=time, link_post=True,
                            submission_id=None)
+            for i in roo_issues:
+                n.issues.add(Issues[i.id])
             return n
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
-               remove_issues=[], time=None, reset_issues=False):
+               remove_issues=[], time=None, reset_issues=False, user=None, subreddit=None):
         if DRY_RUN:
             return roo
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
-                                           context=context, time=None)
+                                           context=context, time=time, user=user, subreddit=subreddit)
 
         with db_session:
             roo = Switcharoo[roo.id]
@@ -387,6 +400,20 @@ class SwitcharooLog:
                 self._link_reddit(roo)
                 return roo
         return None
+
+    def check_privated_sub(self, subreddit):
+        with db_session:
+            q = PrivatedSubs.get(subreddit=subreddit)
+            return q
+
+    def update_privated_sub(self, subreddit, expiration=None, status=None):
+        with db_session:
+            p = PrivatedSubs.get(subreddit=subreddit)
+            if p:
+                p.set(**self._params_without_none(expiration=expiration, status=status))
+            else:
+                p = PrivatedSubs(subreddit=subreddit, expiration=expiration, status=status)
+
 
 
 class SwitcharooStats:

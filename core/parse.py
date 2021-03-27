@@ -35,6 +35,7 @@ class RedditURL:
 
     def __init__(self, url):
         self.is_reddit_url = False
+        self.subreddit = None
         self.thread_id = None
         self.comment_id = None
         self.params = {}
@@ -47,6 +48,11 @@ class RedditURL:
     def _regex_to_props(self):
         if self._regex:
             self.is_reddit_url = True
+            if self._regex[0][1]:
+                # Fix user "subreddits" to link properly
+                self.subreddit = self._regex[0][1]
+                if self._regex[0][0] == "/user/":
+                    self.subreddit = "u_" + self._regex[0][1]
             self.thread_id = self._regex[0][3] if self._regex[0][3] else None
             self.comment_id = self._regex[0][4] if self._regex[0][4] else None
             self.params = process_url_params(self._regex[0][6]) if self._regex[0][6] else {}
@@ -307,6 +313,11 @@ def search_pushshift(comment, last_url=None):
     else:
         url = RedditURL("")
     return url
+
+
+def subreddit_privated(reddit, submission_id):
+    pass
+
 
 
 if __name__ == '__main__':

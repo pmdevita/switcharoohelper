@@ -41,7 +41,10 @@ def roo_id_to_issues(id):
 
 def roo_id_to_current_issues(id):
     roo = last_switcharoo.get_roo(id)
-    issues = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
+    if roo.submission:
+        issues = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
+    else:
+        issues = check_errors(reddit, last_switcharoo, roo, comment=roo.comment)
     for i in issues:
         print(i)
 
