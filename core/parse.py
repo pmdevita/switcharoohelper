@@ -9,6 +9,7 @@ import praw.models
 Provides different methods to parse Reddit data
 """
 
+
 class REPatterns:
     # returns the URL from a Reddit embedded hyperlink
     old_link = re.compile("\[.*?\] *\n? *\((.*?)\)")
@@ -21,6 +22,8 @@ class REPatterns:
     reddit_detect = regex.compile(REDDIT_PATTERN)
     short_reddit_strict_parse = re.compile("^{}$".format(SHORT_REDDIT_PATTERN))
     short_reddit_detect = re.compile(SHORT_REDDIT_PATTERN)
+
+    private_subreddit_response = re.compile("(allow|deny)(?: for (\d+) ((?:hour|day|week|month|year))s?)?", re.I)
 
     # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
 
@@ -313,11 +316,6 @@ def search_pushshift(comment, last_url=None):
     else:
         url = RedditURL("")
     return url
-
-
-def subreddit_privated(reddit, submission_id):
-    pass
-
 
 
 if __name__ == '__main__':

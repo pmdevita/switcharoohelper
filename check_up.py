@@ -24,13 +24,13 @@ args = argparser.parse_args()
 mode = CredentialsLoader.get_credentials()['general']['mode']
 operator = CredentialsLoader.get_credentials()['general']['operator']
 
-if mode == 'production':
-    action = ModAction(reddit)
-elif mode == 'development':
-    action = PrintAction(reddit)
-else:
-    print("No mode defined in credentials")
-    exit(1)
+# if mode == 'production':
+action = ModAction(reddit)
+# elif mode == 'development':
+#     action = PrintAction(reddit)
+# else:
+#     print("No mode defined in credentials")
+#     exit(1)
 
 last_switcharoo = SwitcharooLog(reddit)
 last_switcharoo.sync_issues()

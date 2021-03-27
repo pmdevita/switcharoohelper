@@ -1,5 +1,5 @@
 bot_name = "SwitcharooHelper"
-version = "3.1.0"
+version = "3.2.0"
 user_agent = f"{bot_name} v{version} by /u/pmdevita"
 subreddit = "switcharoo"
 sleep_time = 120
@@ -9,3 +9,5 @@ settled_check = 60 * 60 * 24 * 4
 ONLY_BAD = 0
 ONLY_IGNORED = 1
 ALL_ROOS = 2
+
+CONTEXT_HEADER = "/switcharoo-context:"

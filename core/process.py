@@ -9,6 +9,7 @@ from core.reddit import ReplyObject
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 from core.history import SwitcharooLog, Switcharoo
 from core.credentials import CredentialsLoader
+from core.action import decide_subreddit_privated
 import core.operator
 
 creds = CredentialsLoader.get_credentials()['general']
@@ -46,6 +47,10 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
         new_tracker = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
     else:
         new_tracker = check_errors(reddit, last_switcharoo, roo, comment=roo.comment)
+
+    if new_tracker is None:
+        print(f"Roo {roo.id} cannot be processed at the moment")
+        return
 
     request = last_switcharoo.check_request(roo)
     reply_object = ReplyObject.from_roo(roo)
@@ -284,9 +289,15 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             subreddit = s.subreddit
         except prawcore.exceptions.Forbidden:
             print("Forbidded from post, is the subreddit privated?")
-        print(s.subreddit)
-        tracker.comment_deleted = True
-        return tracker
+            allowed = decide_subreddit_privated(reddit, last_switcharoo, roo.subreddit)
+            if allowed is None or allowed is True:
+                return None
+            else:   # Subreddit has been permanently privated, mark broken
+                tracker.comment_deleted = True  # Todo: Should be a different error
+                return tracker
+        else:
+            tracker.comment_deleted = True
+            return tracker
 
     # Deleted comments sometimes don't generate errors
     if comment.body == "[removed]" or comment.body == "[deleted]":

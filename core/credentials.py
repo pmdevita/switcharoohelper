@@ -1,5 +1,6 @@
 import configparser
 
+
 def get_credentials(file=None):
     path = "credentials.ini"
     if file:
@@ -12,6 +13,7 @@ def get_credentials(file=None):
         raise Exception("config file is wrong")
     creds = config[config.sections()[0]]
     return creds
+
 
 class CredentialsLoader:
     config = None

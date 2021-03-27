@@ -8,6 +8,7 @@ from core.process import process
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
+from core.inbox import process_message, process_modmail
 
 credentials = CredentialsLoader.get_credentials()['reddit']
 
@@ -23,17 +24,18 @@ switcharoo = reddit.subreddit("switcharoo")
 mode = CredentialsLoader.get_credentials()['general']['mode']
 operator = CredentialsLoader.get_credentials()['general']['operator']
 
-if mode == 'production':
-    action = ModAction(reddit)
-elif mode == 'development':
-    action = PrintAction(reddit)
-else:
-    print("No mode defined in credentials")
-    exit(1)
+# if mode == 'production':
+action = ModAction(reddit)
+# elif mode == 'development':
+#     action = PrintAction(reddit)
+# else:
+#     print("No mode defined in credentials")
+#     exit(1)
 
 last_switcharoo = SwitcharooLog(reddit)
 last_switcharoo.sync_issues()
 
+message_reading_cooldown = 0
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
@@ -71,6 +73,17 @@ while True:
 
             print("Checked up to", submissions[len(submissions) - 1].id)
             # save_last_data(last_data, last_switcharoo)
+
+        # for message in reddit.inbox.unread():
+        #     process_message(reddit, last_switcharoo, message)
+
+        if not message_reading_cooldown:
+            for conversation in switcharoo.modmail.conversations(limit=100, state="mod"):
+                process_modmail(reddit, last_switcharoo, conversation)
+            message_reading_cooldown = 61
+        message_reading_cooldown -= 1
+
+
         time.sleep(consts.sleep_time)
 
     except prawcore.exceptions.RequestException:    # Unable to connect to Reddit

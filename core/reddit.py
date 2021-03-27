@@ -6,7 +6,6 @@ from core.credentials import CredentialsLoader
 creds = CredentialsLoader.get_credentials()['general']
 
 
-
 class UserDoesNotExist(Exception):
     pass
 

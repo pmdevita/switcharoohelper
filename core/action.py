@@ -1,10 +1,13 @@
 from random import randrange
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.issues import *
-from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, NewIssueDeleteStrings
+from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
+    NewIssueDeleteStrings
 from core.constants import ALL_ROOS
 from core.reddit import ReplyObject, UserDoesNotExist
 from core.credentials import CredentialsLoader
+from core.operator import message_private_sub
+from core.parse import REPatterns
 
 creds = CredentialsLoader.get_credentials()['general']
 dry_run = creds['dry_run'].lower() != "false"
@@ -44,7 +47,8 @@ class BaseAction:
                 time = reply_object.created
                 # The date before this went live
                 print("User is non-compliant, deleting unless otherwise mentioned")
-                if time > datetime(year=2021, month=3, day=11, hour=0, minute=0, second=0) or issues.comment_linked_bad_roo or issues.comment_linked_wrong:
+                if time > datetime(year=2021, month=3, day=11, hour=0, minute=0,
+                                   second=0) or issues.comment_linked_bad_roo or issues.comment_linked_wrong:
                     issues.user_noncompliance = True
                     self.process(issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
                     if not dry_run:
@@ -102,10 +106,13 @@ class PrintAction(BaseAction):
                 reply_object.permalink))
         if issues.comment_linked_wrong:
             message_lines.append("{} comment is not linked to the next level, https://www.reddit."
-                                 "com{}?context={}".format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
+                                 "com{}?context={}".format(reply_object.permalink,
+                                                           last_good_submission.comment.permalink,
+                                                           last_good_submission.context))
         if issues.comment_linked_bad_roo:
             message_lines.append("{} comment is linked to bad roo, not https://www.reddit.com{}?context={}"
-                                 .format(reply_object.permalink, last_good_submission.comment.permalink, last_good_submission.context))
+                                 .format(reply_object.permalink, last_good_submission.comment.permalink,
+                                         last_good_submission.context))
         if issues.comment_lacks_context:
             message_lines.append("{} comment is correct link but did not "
                                  "have ?context in it".format(reply_object.permalink))
@@ -172,7 +179,7 @@ class ModAction(BaseAction):
             if last_good_submission.context is not None:
                 if last_good_submission.context > 0:
                     last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
-                                           f"?context={last_good_submission.context} "
+                                    f"?context={last_good_submission.context} "
             if not last_good_url:
                 if last_good_submission.submission:
                     last_good_url = last_good_submission.submission.url
@@ -226,7 +233,7 @@ class ModAction(BaseAction):
             #                      "delete everything after and including the '?' in your URL and then append "
             #                      "`?context=x` to the end of the URL. Don't forget to relink your switcharoo to the "
             #                      "newest switcharoo submission!")
-            resubmit = False    # Already gives resubmit instructions so this is redundant
+            resubmit = False  # Already gives resubmit instructions so this is redundant
         if issues.submission_link_final_slash:
             # message_lines.append("your switcharoo had a trailing slash (\"/\") at the end of it. This causes the "
             #                      "`?context=x` property to not work. You can resubmit if you delete the slash(es) "
@@ -295,3 +302,53 @@ class ModAction(BaseAction):
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
         #                                                 "{}".format(submission.url))
+
+
+def decide_subreddit_privated(reddit, last_switcharoo, subreddit):
+    ps = last_switcharoo.check_privated_sub(subreddit)
+    if ps:
+        if not ps.is_expired() and ps.allowed is not None:
+            # We have a valid and current decision, report it back
+            return ps.allowed
+        else:
+            if ps.update_requested:
+                return None
+            ps.reset()
+    # There is no currently valid decision and the mods haven't been asked, ask the mods
+    message_private_sub(reddit, subreddit)
+    last_switcharoo.update_privated_sub(subreddit, update_requested=True)
+    return None
+
+
+def modmail_action(last_switcharoo, context, message):
+    decision_type = context.get("decision-type", None)
+    if decision_type == "private-subreddit":
+        return private_subreddit(last_switcharoo, context["subreddit"], message)
+
+
+def private_subreddit(last_switcharoo, subreddit, message):
+    match = REPatterns.private_subreddit_response.findall(message)
+    if match:
+        match = match[0]
+        status = None
+        time = None
+        if match[0].lower() == "allow":
+            status = True
+        elif match[0].lower() == "deny":
+            status = False
+        message = f"Got it, {'allowed' if status else 'denied'}"
+        if match[1]:
+            time = datetime.now()
+            amount = int(match[1])
+            unit = match[2] + "s"
+            if unit == "months":
+                amount = amount * 4
+                unit = "weeks"
+            if unit == "years":
+                amount = amount * 52
+                unit = "weeks"
+            time = time + timedelta(**{unit: amount})
+            message += f" for {amount} {unit}"
+        last_switcharoo.update_privated_sub(subreddit, allowed=True, expiration=time, update_requested=False)
+        return message
+    return None

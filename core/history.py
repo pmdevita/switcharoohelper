@@ -4,6 +4,7 @@ from pony.orm import Database, PrimaryKey, Required, Optional, db_session, selec
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
+import praw.exceptions
 import prawcore.exceptions
 import random
 import string
@@ -45,8 +46,8 @@ class Switcharoo(db.Entity):
     comment_id = Optional(str)
     context = Optional(int)
     link_post = Required(bool)
-    user = Optional(str)
-    subreddit = Optional(str)
+    user = Optional(str, max_len=21)
+    subreddit = Optional(str, max_len=21)
     issues = Set('Issues')
     requests = Optional('FixRequests', cascade_delete=True)
 
@@ -72,12 +73,16 @@ class Switcharoo(db.Entity):
         return self._comment
 
     def print(self):
-        if self.submission_id:
-            print(f"Roo {self.id}: {self.submission.title} by {self.submission.author}"
-                  f" {datetime.fromtimestamp(self.submission.created_utc)}")
-        else:
-            print(f"Roo {self.id}: {self.comment.author}"
-                  f" {datetime.fromtimestamp(self.comment.created_utc)}")
+        try:
+            if self.submission_id:
+                print(f"Roo {self.id}: {self.submission.title} by {self.submission.author}"
+                      f" {datetime.fromtimestamp(self.submission.created_utc)}")
+            else:
+                print(f"Roo {self.id}: {self.comment.author if self.comment.author else ''}"
+                      f" {datetime.fromtimestamp(self.comment.created_utc if self.comment.author else '')}")
+        except praw.exceptions.ClientException:
+            print(f"Roo {self.id}")
+
 
 
 class Issues(db.Entity):
@@ -110,9 +115,23 @@ class FixRequests(db.Entity):
 
 
 class PrivatedSubs(db.Entity):
-    subreddit = PrimaryKey(str)
-    status = Required(int)
+    subreddit = PrimaryKey(str, max_len=21)
+    allowed = Optional(bool)
     expiration = Optional(datetime)
+    update_requested = Required(bool)
+
+    def is_expired(self):
+        if self.expiration:
+            return datetime.now() > self.expiration
+        else:
+            # If this has no expiration set, it never expires
+            return False
+
+    def reset(self):
+        with db_session:
+            p = PrivatedSubs[self.subreddit]
+            p.delete()
+        return None
 
 
 db_type = bind_db(db)
@@ -406,14 +425,15 @@ class SwitcharooLog:
             q = PrivatedSubs.get(subreddit=subreddit)
             return q
 
-    def update_privated_sub(self, subreddit, expiration=None, status=None):
+    def update_privated_sub(self, subreddit, expiration=None, allowed=None, update_requested=None):
         with db_session:
             p = PrivatedSubs.get(subreddit=subreddit)
             if p:
-                p.set(**self._params_without_none(expiration=expiration, status=status))
+                p.set(**self._params_without_none(expiration=expiration, allowed=allowed,
+                                                  update_requested=update_requested))
             else:
-                p = PrivatedSubs(subreddit=subreddit, expiration=expiration, status=status)
-
+                p = PrivatedSubs(subreddit=subreddit, expiration=expiration, allowed=allowed,
+                                 update_requested=update_requested)
 
 
 class SwitcharooStats:

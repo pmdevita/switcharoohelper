@@ -1,4 +1,11 @@
+import json
+from core.constants import CONTEXT_HEADER
+
 BLANK = 0
+
+
+def format_context(context):
+    return f"[]({CONTEXT_HEADER}{{{json.dumps(context)}}})"
 
 
 class IssueStrings:
@@ -148,9 +155,10 @@ class NewIssueDeleteStrings(DeleteStrings):
 class ModMail:
     privated_sub_subject = "Decide what to do with a privated sub"
     privated_sub_body = "The subreddit r/{subreddit} appears to be privated, what action should be taken with " \
-                        "roos linked there?\n\nExample response:\n- `deny`\n- `allow for 7 days`\n" \
-                        "- `allow for 2 months`\n[](switcharoo-context: \"decision-type\": \"private-subreddit\", " \
-                        "\"subreddit\": \"{subreddit}\"})\n\n"
+                        "roos linked there?\n\nExample response:\n\n- `deny`\n- `allow for 7 days`\n" \
+                        "- `allow for 2 months`\n" \
+                        f"{format_context({'decision-type': 'private-subreddit', 'subreddit': '{subreddit}'})}" \
+                        "\n\n"
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
 
