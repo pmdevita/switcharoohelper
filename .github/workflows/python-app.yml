@@ -26,4 +26,4 @@ jobs:
         pip install -r requirements.txt
     - name: Run unit tests
       run: |
-        python -m unittests -v tests
+        python -m unittest -v tests
