@@ -42,7 +42,7 @@ class BaseAction:
     def act_again(self, reply_object: ReplyObject, issues, request, grace_period, stage, last_good_submission):
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0 or dry_run:
-            if request.attempts > 2:
+            if request.attempts > 6:
                 # Alright pal you're heading out
                 time = reply_object.created
                 # The date before this went live
@@ -146,7 +146,7 @@ class ModAction(BaseAction):
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         time = reply_object.created
-        if time > datetime(year=2021, month=3, day=1):
+        if time > datetime(year=2021, month=1, day=1):
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):

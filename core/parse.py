@@ -163,11 +163,12 @@ def is_meta_title(title):
     return "meta" in title.lower() and "vs" not in title.lower()
 
 
-def only_reddit_url(text):
+def only_reddit_url(title, body):
     """Determines if text is only a reddit URL. Used for finding incorrectly made
     meta posts"""
-    total_len = len(text)
-    threshold = 15
+    total_len = len(body)
+    threshold = max(len(title), 16)
+    no_link = True
 
     # match = REPatterns.reddit_detect.match(text)
     # if match:
@@ -179,7 +180,7 @@ def only_reddit_url(text):
     links = []
 
     # If it is an embedded link
-    for m in REPatterns.link.finditer(text):
+    for m in REPatterns.link.finditer(body):
         groups = m.groups()
         start = m.start()
         end = m.end()
@@ -188,30 +189,42 @@ def only_reddit_url(text):
         total_len -= (end - start) - (len(groups[0]) + len(groups[1]))
 
         print("link found", groups, total_len)
+        no_link = False
 
         # Is the embedded link a reddit link?
         reddit_match = REPatterns.reddit_detect.match(groups[1])
         if reddit_match:
             print("reddit match", reddit_match)
             total_len -= len(groups[1])
-            if total_len < threshold:
+            if total_len <= threshold:
                 return True
 
         links.append([groups, start, end])
 
     # We have passed all the checks for link markup, now remove them from the text to finish the search
     for i in reversed(links):
-        text = text[:i[1]] + i[0][0] + text[i[2]:]
+        body = body[:i[1]] + i[0][0] + body[i[2]:]
 
     # Now remove Reddit links from the rest of the text
-    for match in REPatterns.reddit_detect.finditer(text):
+    for match in reversed(list(REPatterns.reddit_detect.finditer(body))):
         # There is, are we under threshold?
         total_len -= match.end() - match.start()
-        if total_len < threshold:
+        body = body[:match.start()] + body[match.end():]
+        no_link = False
+        if total_len <= threshold:
             return True
 
-    # Is not only a reddit url!
-    return False
+    if no_link and "vs" not in title.lower():
+        # This post did not contain any links and it doesn't have vs in the title, it probably
+        # won't be considered a roo by humans either
+        return False
+    else:
+        # Strip out all whitespace
+        body = body.replace(" ", "").replace("\n", "")
+        total_len = len(body)
+
+        # Is not only a reddit url!
+        return total_len <= threshold
 
 
 def find_roo_recursive(comment, starting_depth, depth):
@@ -319,4 +332,4 @@ def search_pushshift(comment, last_url=None):
 
 
 if __name__ == '__main__':
-    print(parse_comment("""[](/kderpymeow-90-f) Ah, the ol' reddit [third-world-aroo!](https://old.reddit.com/r/interestingasfuck/comments/a9xt2g/you_may_be_cool_but_you_will_never_be_as_cool_as/ecnjvlf/?context=2)"""))
+    print(only_reddit_url("[Turkey vs. Grandma](https://www.reddit.com/r/coolguides/comments/meo1l2/how_to_reheat_pizza/gsl4arc?utm_source=share&utm_medium=web2x&context=5)"))

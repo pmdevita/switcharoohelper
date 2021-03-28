@@ -193,7 +193,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         if submission.is_self:
             # If meta, determine if it was incorrectly submitted as meta
             if not parse.is_meta_title(submission.title):
-                if parse.only_reddit_url(submission.selftext):
+                if parse.only_reddit_url(submission.title, submission.selftext):
                     tracker.submission_is_meta = True
                     return tracker
             return tracker
