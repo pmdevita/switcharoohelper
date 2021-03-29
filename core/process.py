@@ -269,6 +269,8 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             tracker.submission_linked_thread = True
             return tracker
 
+        # Todo: Make sure there is not already a good roo older than this one with these thread and comment ids
+
         # If we are in the middle of adding this to the db, add the thread and comment ids now
         if init_db:
             roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id,

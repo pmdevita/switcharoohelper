@@ -349,6 +349,6 @@ def private_subreddit(last_switcharoo, subreddit, message):
                 unit = "weeks"
             time = time + timedelta(**{unit: amount})
             message += f" for {amount} {unit}"
-        last_switcharoo.update_privated_sub(subreddit, allowed=True, expiration=time, update_requested=False)
+        last_switcharoo.update_privated_sub(subreddit, allowed=status, expiration=time, update_requested=False)
         return message
     return None
