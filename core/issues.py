@@ -48,6 +48,12 @@ issues_list = [
 
     # The user ignored the bot and did not fix the roo
     {"type": "user_noncompliance", "bad": True},
+
+    # The user who submitted this roo is not the user who wrote the comment
+    {"type": "user_mismatch", "bad": True},
+
+    # This subreddit is privated
+    {"type": "subreddit_privated", "bad": True}
 ]
 
 
@@ -156,6 +162,10 @@ class IssueTracker:
             if i.has_issue:
                 size += 1
         return size
+
+    def __eq__(self, other: "IssueTracker"):
+        added, removed = self.diff(other)
+        return len(added) == 0 and len(removed) == 0
 
 
 class IssueTrackerIter:

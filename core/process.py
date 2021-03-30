@@ -295,7 +295,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             if allowed is None or allowed is True:
                 return None
             else:   # Subreddit has been permanently privated, mark broken
-                tracker.comment_deleted = True  # Todo: Should be a different error
+                tracker.subreddit_privated = True  # Todo: Should be a different error
                 return tracker
         else:
             tracker.comment_deleted = True
@@ -306,13 +306,15 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         tracker.comment_deleted = True
         return tracker
 
-    # Todo: Double-check submission author and comment author are the same
+    # Good date info to have on hand in the upcoming checks
+    created = submission if submission else comment
+    created = datetime.fromtimestamp(created.created_utc)
 
     # Get link in comment
-    comment_link = parse.parse_comment(comment.body)
+    comment_url = parse.parse_comment(comment.body)
 
     # If there is no link, report it
-    if not comment_link.is_reddit_url:
+    if not comment_url.is_reddit_url:
         """
         At this point, we need to decide if the roo is salvageable. We need to search the comments
         to see if there is an actual roo here and request a correction to it's link (and make it 
@@ -322,16 +324,14 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         tracker.comment_has_no_link = True
         return tracker
 
-    # What comment and thread does this submission's switcharoo link to? It should be the last good one
-    # comment_url = parse.RedditURL(comment_link)
-    comment_url = comment_link
+    if created > datetime(year=2021, month=3, day=1):
+        if submission and comment:
+            if comment.author != submission.author:
+                tracker.user_mismatch = True
+                return tracker
 
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=0)
-
-    # Good date info to have on hand in the upcoming checks
-    created = submission if submission else comment
-    created = datetime.fromtimestamp(created.created_utc)
 
     # check if there is a last good submission to verify against
     if last_good_submission:

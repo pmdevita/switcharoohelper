@@ -23,12 +23,14 @@ class IssueStrings:
     submission_linked_post = ""
     submission_bad_url = ""
     user_noncompliance = ""
+    user_mismatch = ""
+    subreddit_privated = ""
 
     def __str__(self):
         return self.__class__.__name__
 
 
-class ModIssueStrings:
+class ModIssueStrings(IssueStrings):
     submission_lacks_context = "the link to your switcharoo does not contain the `?context=x` suffix. Read " \
                                "the sidebar for more information."
     submission_linked_thread = "your post's link is to a Reddit thread, not a comment permalink. Make sure to " \
@@ -72,7 +74,12 @@ class ModIssueStrings:
                          "Did you copy it correctly?"
     user_noncompliance = "you have ignored the request to fix the linking problems. Contact the moderators " \
                          "to have your post reinstated."
-    submission_deleted = BLANK
+    submission_deleted = BLANK  # maybe should be None?
+    user_mismatch = "the user submitting this roo is not the same as the user who created the roo comment. Both the " \
+                    "commenter and poster should be the same for the sake of consistency and to avoid duplicate " \
+                    "posting."
+    subreddit_privated = "the subreddit this roo is from is privated so most users will be unable to continue down " \
+                         "the roo chain through this one."
 
 
 class NewIssueIssues(ModIssueStrings):

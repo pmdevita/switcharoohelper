@@ -255,6 +255,9 @@ class ModAction(BaseAction):
             #                      "to have your post reinstated.")
             resubmit = False
 
+        if issues.user_mismatch or issues.subreddit_privated:
+            resubmit = False
+
         # Choose template based on action
         # This should be a subclass thing, not this
         # if action == DELETE:

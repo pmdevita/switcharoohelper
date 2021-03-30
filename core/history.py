@@ -23,7 +23,8 @@ def bind_db(db):
     creds = CredentialsLoader.get_credentials()['database']
 
     if creds['type'] == 'sqlite':
-        db.bind(provider='sqlite', filename='../database.sqlite', create_db=True)
+        db_file = creds.get('db_file', "database.sqlite")
+        db.bind(provider='sqlite', filename='../' + db_file, create_db=True)
     elif creds['type'] == 'mysql':
         # Check for SSL arguments
         ssl = {}
@@ -134,11 +135,6 @@ class PrivatedSubs(db.Entity):
         return None
 
 
-db_type = bind_db(db)
-
-db.generate_mapping(create_tables=True)
-
-
 # set_sql_debug(True)
 
 
@@ -146,10 +142,22 @@ class SwitcharooLog:
     def __init__(self, reddit):
         self.reddit = reddit
         self.stats = SwitcharooStats(reddit)
+        self.db = db
+        self.db_type = bind_db(db)
+        self.db.generate_mapping(create_tables=True)
 
     def _link_reddit(self, roo):
         """Give DB entity a reference to the Reddit object"""
         roo._link_reddit(self.reddit)
+
+    def __del__(self):
+        self.db.disconnect()
+
+    def unbind(self):
+        # Kind of a nasty hack
+        self.db.disconnect()
+        self.db.provider = None
+        self.db.schema = None
 
     def _params_without_none(self, **kwargs):
         """Calling this allows us to have positional arguments that don't affect anything unless set by user"""
@@ -228,7 +236,7 @@ class SwitcharooLog:
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time < time)
             # SQLite, I love you but why
-            if db_type == "sqlite" and before_roo:
+            if self.db_type == "sqlite" and before_roo:
                 q = q.filter(lambda x: x.id != before_roo.id)
             q = q.order_by(desc(Switcharoo.time)).limit(limit=1, offset=offset)
             if q:
@@ -243,7 +251,7 @@ class SwitcharooLog:
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post and s.time > time).limit(
                 limit=1, offset=offset)
-            if db_type == "sqlite":
+            if self.db_type == "sqlite":
                 q = q.filter(lambda x: x.id != after_roo.id)
             if q:
                 roo = q[0]
@@ -305,7 +313,7 @@ class SwitcharooLog:
             if after_roo or after_time:
                 time = after_time if after_time else after_roo.time
                 query = query.filter(lambda q: q.time < time)
-            if db_type == "sqlite" and after_roo:
+            if self.db_type == "sqlite" and after_roo:
                 query = query.filter(lambda x: x.id != after_roo.id)
             query = query.order_by(desc(Switcharoo.time)).limit(limit)
             roos = list(query)
