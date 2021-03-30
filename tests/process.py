@@ -4,9 +4,10 @@ from tests.shims import praw
 from datetime import datetime
 
 from core.credentials import get_credentials, CredentialsLoader
-
+from pathlib import Path
 # Configure config first
-credentials = CredentialsLoader().get_credentials("configs/process.ini")
+credentials = CredentialsLoader().get_credentials(Path(os.path.dirname(os.path.realpath(__file__))) / "configs/process.ini")
+
 from core.process import check_errors
 from core.history import SwitcharooLog
 from core.issues import IssueTracker
