@@ -235,7 +235,7 @@ class SwitcharooLog:
                 r.delete()
 
     # Used to set offset to 1 to get last good but was never hooked up properly? IDK why it was done
-    def last_good(self, before_roo=None, offset=0):
+    def last_good(self, before_roo=None, offset=0, user=None, all=False):
         time = before_roo.time if before_roo else datetime.now()
         roo = None
         with db_session:
@@ -243,11 +243,20 @@ class SwitcharooLog:
             # SQLite, I love you but why
             if self.db_type == "sqlite" and before_roo:
                 q = q.filter(lambda x: x.id != before_roo.id)
+            if user:
+                q = q.filter(lambda x: x.user == user)
             q = q.order_by(desc(Switcharoo.time)).limit(limit=1, offset=offset)
             if q:
-                roo = q[0]
+                if all:
+                    roo = list(q)
+                else:
+                    roo = q[0]
         if roo:
-            self._link_reddit(roo)
+            if all:
+                for i in roo:
+                    self._link_reddit(i)
+            else:
+                self._link_reddit(roo)
         return roo
 
     def next_good(self, after_roo, offset=0):
@@ -466,17 +475,27 @@ class SwitcharooStats:
     def __init__(self, reddit):
         self.reddit = reddit
 
-    def num_of_good_roos(self, before=None, after=None, user=None):
+    def num_of_good_roos(self, before=None, after=None, user=None, all_users=False):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
+            if all_users and not user:
+                q = select((s.user, count(s)) for s in Switcharoo if True not in s.issues.bad and s.link_post)
+            else:
+                q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
             if before:
                 q = q.filter(lambda x: x.time < before)
             if after:
                 q = q.filter(lambda x: x.time > after)
             if user:
                 q = q.filter(lambda x: x.user == user)
-            return count(q)
+            if all_users and not user:
+                return list(q)
+            else:
+                return count(q)
+
+    def all_user_flair(self):
+        with db_session:
+            return list(select(u for u in UserFlair))
 
 
 if __name__ == '__main__':
