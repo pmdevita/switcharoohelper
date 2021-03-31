@@ -78,12 +78,9 @@ class BaseAction:
         else:
             print("Still waiting on cooldown")
 
-    def thank_you(self, roo, award):
+    def thank_you(self, roo):
         reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
-        if award:
-            # Gib award
-            pass
 
     def reset(self):
         self.issues = set()
@@ -355,3 +352,11 @@ def private_subreddit(last_switcharoo, subreddit, message):
         last_switcharoo.update_privated_sub(subreddit, allowed=status, expiration=time, update_requested=False)
         return message
     return None
+
+
+def increment_user_fixes(last_switcharoo, reply_object):
+    if creds.get("award", "false").lower() == "true":
+        if reply_object.created < datetime.now() - timedelta(weeks=2):
+            fixes = last_switcharoo.check_user_flair(reply_object.author.name)
+            fixes = fixes.fixes if fixes else 0
+            last_switcharoo.update_user_flair(user=reply_object.author.name, fixes=fixes + 1)

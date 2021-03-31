@@ -24,6 +24,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run unit tests
+    - name: Action Tests
       run: |
-        python -m unittest -v tests
+        python -m unittest -v tests.action
+    - name: Parse Tests
+      run: |
+        python -m unittest -v tests.parse
+    - name: Process Tests
+      run: |
+        python -m unittest -v tests.process

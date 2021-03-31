@@ -9,7 +9,7 @@ from core.reddit import ReplyObject
 from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
 from core.history import SwitcharooLog, Switcharoo
 from core.credentials import CredentialsLoader
-from core.action import decide_subreddit_privated
+from core.action import decide_subreddit_privated, increment_user_fixes
 import core.operator
 
 creds = CredentialsLoader.get_credentials()['general']
@@ -36,7 +36,7 @@ def process(reddit, submission, last_switcharoo, action):
         last_switcharoo.update(roo, reset_issues=True)
 
 
-def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, stage=ONLY_BAD):
+def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS:
@@ -113,7 +113,8 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, award=False, 
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
-            action.thank_you(roo, award)
+            action.thank_you(roo)
+            increment_user_fixes(last_switcharoo, reply_object)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine
             print("Correct")
@@ -308,7 +309,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
     # Good date info to have on hand in the upcoming checks
     created = submission if submission else comment
-    created = datetime.fromtimestamp(created.created_utc)
+    created = datetime.utcfromtimestamp(created.created_utc)
 
     # Get link in comment
     comment_url = parse.parse_comment(comment.body)

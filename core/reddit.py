@@ -68,4 +68,4 @@ class ReplyObject:
 
     @property
     def created(self):
-        return datetime.fromtimestamp(self.object.created_utc)
+        return datetime.utcfromtimestamp(self.object.created_utc)

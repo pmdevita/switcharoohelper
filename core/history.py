@@ -135,6 +135,11 @@ class PrivatedSubs(db.Entity):
         return None
 
 
+class UserFlair(db.Entity):
+    user = PrimaryKey(str, max_len=21)
+    roos = Required(int, default=0)
+    fixes = Required(int, default=0)
+
 # set_sql_debug(True)
 
 
@@ -443,12 +448,25 @@ class SwitcharooLog:
                 p = PrivatedSubs(subreddit=subreddit, expiration=expiration, allowed=allowed,
                                  update_requested=update_requested)
 
+    def check_user_flair(self, user):
+        with db_session:
+            f = UserFlair.get(user=user)
+            return f
+
+    def update_user_flair(self, user, roos=None, fixes=None):
+        with db_session:
+            f = UserFlair.get(user=user)
+            if f:
+                f.set(**self._params_without_none(roos=roos, fixes=fixes))
+            else:
+                f = UserFlair(user=user, **self._params_without_none(roos=roos, fixes=fixes))
+
 
 class SwitcharooStats:
     def __init__(self, reddit):
         self.reddit = reddit
 
-    def num_of_good_roos(self, before=None, after=None):
+    def num_of_good_roos(self, before=None, after=None, user=None):
         roo = None
         with db_session:
             q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
@@ -456,6 +474,8 @@ class SwitcharooStats:
                 q = q.filter(lambda x: x.time < before)
             if after:
                 q = q.filter(lambda x: x.time > after)
+            if user:
+                q = q.filter(lambda x: x.user == user)
             return count(q)
 
 

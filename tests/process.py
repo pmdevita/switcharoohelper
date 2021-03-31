@@ -6,6 +6,7 @@ from datetime import datetime
 from core.credentials import get_credentials, CredentialsLoader
 from pathlib import Path
 # Configure config first
+tests_folder = Path(os.path.dirname(os.path.realpath(__file__)))
 credentials = CredentialsLoader().get_credentials(Path(os.path.dirname(os.path.realpath(__file__))) / "configs/process.ini")
 
 from core.process import check_errors
@@ -16,8 +17,8 @@ from core.issues import IssueTracker
 def reset_database(reddit, last_switcharoo: SwitcharooLog = None):
     if last_switcharoo:
         last_switcharoo.unbind()
-    if os.path.exists(f"../{credentials['database']['db_file']}"):
-        os.remove(f"../{credentials['database']['db_file']}")
+    if os.path.exists(tests_folder / ".." / f"{credentials['database']['db_file']}"):
+        os.remove(tests_folder / ".." / f"{credentials['database']['db_file']}")
     return SwitcharooLog(reddit)
 
 
@@ -62,7 +63,7 @@ class CheckErrors(unittest.TestCase):
                                                "000001", "aaaaab", "123abce", 3,
                                                datetime(month=4, day=2, year=2021), init_db=True)
         reddit.comment("123abce", f"[Ah the ol' Reddit switcharoo!]({previous_url})", "user1",
-                       datetime(month=1, day=2, year=2020))
+                       datetime(month=4, day=2, year=2020))
         expected_tracker = IssueTracker()
         tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
         self.assertTrue(tracker == expected_tracker)
@@ -102,3 +103,24 @@ class CheckErrors(unittest.TestCase):
         expected_tracker.subreddit_privated = True
         tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
         self.assertTrue(tracker == expected_tracker)
+
+    def test_comment_linked_bad_roo(self):
+        reddit = praw.Reddit(username=credentials['reddit']['username'])
+        global last_switcharoo
+        last_switcharoo = reset_database(reddit, last_switcharoo)
+        previous_roo, previous_url, previous_submission = gen_url_and_roo(reddit, last_switcharoo, "sub1", "user1",
+                                                                          "000000", "aaaaaa", "123abcd", 3,
+                                                                          datetime(month=4, day=1, year=2021))
+        another_roo, another_url, another_submission = gen_url_and_roo(reddit, last_switcharoo, "sub2", "user2",
+                                                                          "000001", "aaaaab", "123abce", 3,
+                                                                          datetime(month=4, day=2, year=2021))
+        roo, url, submission = gen_url_and_roo(reddit, last_switcharoo, "sub3", "user3",
+                                               "000002", "aaaaac", "123abcf", 3,
+                                               datetime(month=4, day=3, year=2021), init_db=True)
+        reddit.comment("123abcf", f"[Ah the ol' Reddit switcharoo!]({previous_url})", "user3",
+                       datetime(month=4, day=3, year=2020))
+        expected_tracker = IssueTracker()
+        expected_tracker.comment_linked_bad_roo = True
+        tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
+        self.assertTrue(tracker == expected_tracker)
+
