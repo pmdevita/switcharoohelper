@@ -2,6 +2,7 @@ praw
 prawcore
 pendulum
 pony
+pymysql
 psaw
 requests
 regex
