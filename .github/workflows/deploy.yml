@@ -29,13 +29,14 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             whoami
-            systemctl --user stop switcharoohelper_main.service
+            systemctl --user stop switcharoo_main.service
             cd ~/switcharoo
             git pull origin production
             cp ~/switcharoo/config/* ~/.config/systemd/user
             ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
             echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
-            systemctl --user start switcharoohelper_main.service
+            systemctl --user daemon-reload
+            systemctl --user start switcharoo_main.service
             
 
           
