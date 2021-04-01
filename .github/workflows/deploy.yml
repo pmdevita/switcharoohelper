@@ -33,6 +33,7 @@ jobs:
             cd ~/switcharoo
             git pull origin production
             cp ~/switcharoo/config/* ~/.config/systemd/user
+            ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
             systemctl --user start switcharoohelper_main.service
             
 
