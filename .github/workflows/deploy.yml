@@ -2,14 +2,14 @@
 
 name: Deploy to Production
 
-# Controls when the action will run. 
-on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ production ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+## Controls when the action will run.
+#on:
+#  # Triggers the workflow on push or pull request events but only for the master branch
+#  push:
+#    branches: [ production ]
+#
+#  # Allows you to run this workflow manually from the Actions tab
+#  workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -32,7 +32,7 @@ jobs:
             systemctl --user stop switcharoo_main.service
             cd ~/switcharoo
             git pull origin production
-            cp ~/switcharoo/config/* ~/.config/systemd/user
+            cp ~/switcharoo/config/services/* ~/.config/systemd/user
             ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
             echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
             systemctl --user daemon-reload

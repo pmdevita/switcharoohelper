@@ -5,9 +5,14 @@ name: Switcharoohelper Unit Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, production ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, production ]
+  workflow_run:
+    workflows: ["Deploy to Production"]
+    branches: [ production ]
+    types:
+      - completed
 
 jobs:
   build:
