@@ -2,23 +2,33 @@
 
 Verifies and maintains correct linking on Reddit's ol' switcharoo. switcharoohelper works by checking a switcharoo for 
 a set of known issues, almost like a unit test. 
-It then potentially deletes it if is unsalvagable and gives advice to the submitter on how to fix or resubmit it.
-As of the upcoming version 3, it also can scan the chain for breaks using logged data in the database and monitor 
-current issues in the chain. It can then ask for help to relink around breaks in the chain.
 
-I'm not gonna sugar coat it, the bot as it currently stands a is a mess of highly situational specific logic 
-based on how things went wrong and what date the roo was added. I'm hoping I can make it more readable in the 
-future but banging this logic out of my head was just a mess in the first place.
+The bot has several services that can be run:
 
-Right now, roos older than March 2021 are given a pass
+- main.py - This service logs new incoming roos and, if needed, offers fixing advice to the submitter and deletes 
+submissions that are broken or need to be resubmitted to fix. It also reads modmail for moderator commands.
+- check_up.py - This service scans the chain, checking for any changes. It then sends comments or messaegs to users 
+asking for them to help fix the chain or remind them that they still need to fix it.
+- userflair_update.py - This service synchronizes subreddit flair with the database.
+
+Currently, the bot code is a bit of a mess. The logic for adding the check up service was difficult to bang out of my 
+head and I'm still in the process of fixing it up. The bot is also still midway through a migration to a more OO design 
+and I haven't quite figured out some parts of it yet.
+
+The bot checks up roo linking according to 
+[official r/switcharoo instructions](https://www.reddit.com/r/switcharoo/wiki/index#wiki_how_to_submit_a_roo).
+
+Additionally, right now, roos older than March 2021 are given a pass
 
   * For improperly marking context
-  * For linking to roos later removed by automoderator
+  * For linking to roos later removed by AutoModerator
   
 And roos older than March 2019 are given an additional pass
 
   * For linking the wrong comment in the thread
 
+These errors are abundant and trying to fix all of them would be a massive headache. An approach of "if it isn't too 
+broke, don't fix it" has been adopted for these old roos.
 
 ## Setup/Running
 
@@ -26,7 +36,7 @@ Create a file called `credentials.ini` in the root directory of this project
 and in it place the following:
 ```ini
 [general]
-mode = development
+mode = development|production
 operator = reddit_username
 dry_run = False
 award = True
@@ -43,10 +53,7 @@ host = hostname|ip
 username = username
 password = password
 database = database
-
 ```
-
-then run `main.py`.
 
 This bot currently runs under the user account /u/switcharoohelper
 
