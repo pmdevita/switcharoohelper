@@ -9,7 +9,7 @@ if root not in sys.path:
 
 import praw
 from core.credentials import get_credentials, CredentialsLoader
-credentials = CredentialsLoader.get_credentials("../credentials.ini")['reddit']
+credentials = CredentialsLoader.get_credentials(tools_folder / "../credentials.ini")['reddit']
 
 from core.history import SwitcharooLog
 from core import constants as consts
