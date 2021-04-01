@@ -5,6 +5,8 @@ Description=Main Switcharoohelper service
 [Service]
 WorkingDirectory=%h/switcharoo
 ExecStart=%h/venv/bin/python %h/switcharoo/main.py
+StandardOutput=file:/var/log/switcharoo/main.log
+StandardError=file:/var/log/switcharoo/main.log
 
 [Install]
 WantedBy=default.target
