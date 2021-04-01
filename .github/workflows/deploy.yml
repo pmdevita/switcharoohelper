@@ -34,7 +34,7 @@ jobs:
             git pull origin production
             cp ~/switcharoo/config/* ~/.config/systemd/user
             ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
-            echo ${{ secrets.CONFIG }} > ~/switcharoo/credentials.ini
+            echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
             systemctl --user start switcharoohelper_main.service
             
 
