@@ -13,3 +13,8 @@ check_up.add_argument('--double-check-link', '-c', action="store_true", help="En
 tracer = argparse.ArgumentParser(description="Trace the switcharoo link chain by comment")
 tracer.add_argument("--discover", '-d', action='store_true')
 
+
+main = argparse.ArgumentParser(description="Check and log new switcharoo submissions")
+main.add_argument("--pid", '-p', action="store", help="Path to PID file")
+main.add_argument("--log", '-l', action="store", help="Path to log file")
+

@@ -1,28 +1,40 @@
 import praw
 import time
 import traceback
+import signal
 import prawcore.exceptions
+import os
 
 from core.credentials import get_credentials, CredentialsLoader
+reddit_creds = CredentialsLoader.get_credentials()['reddit']
+credentials = CredentialsLoader.get_credentials()['general']
+
+# if credentials.get("pid", False):
+#     pid = str(os.getpid())
+#     with open(credentials['pid'], "w") as f:
+#         f.write(pid)
+
+
+
 from core.process import process
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
 from core.inbox import process_message, process_modmail
 
-credentials = CredentialsLoader.get_credentials()['reddit']
 
-reddit = praw.Reddit(client_id=credentials["client_id"],
-                     client_secret=credentials["client_secret"],
+reddit = praw.Reddit(client_id=reddit_creds["client_id"],
+                     client_secret=reddit_creds["client_secret"],
                      user_agent=consts.user_agent,
-                     username=credentials["username"],
-                     password=credentials["password"])
+                     username=reddit_creds["username"],
+                     password=reddit_creds["password"])
 
 switcharoo = reddit.subreddit("switcharoo")
 
+
 # Action object tracks switcharoo and performs a final action (delete/comment)
-mode = CredentialsLoader.get_credentials()['general']['mode']
-operator = CredentialsLoader.get_credentials()['general']['operator']
+mode = credentials['mode']
+operator = credentials['operator']
 
 # if mode == 'production':
 action = ModAction(reddit)
@@ -36,6 +48,22 @@ last_switcharoo = SwitcharooLog(reddit)
 last_switcharoo.sync_issues()
 
 message_reading_cooldown = 0
+
+terminate = False
+sleeping = False
+
+
+def handler(signum, frame):
+    if sleeping:
+        if credentials.get("pid", False):
+            os.unlink(credentials['pid'])
+        exit()
+    else:
+        terminate = True
+
+
+signal.signal(signal.SIGTERM, handler)
+
 
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
@@ -70,6 +98,8 @@ while True:
             for submission in submissions:
                 process(reddit, submission, last_switcharoo, action)
                 action.reset()
+                if terminate:
+                    break
 
             print("Checked up to", submissions[len(submissions) - 1].id)
             # save_last_data(last_data, last_switcharoo)
@@ -77,14 +107,24 @@ while True:
         # for message in reddit.inbox.unread():
         #     process_message(reddit, last_switcharoo, message)
 
+        if terminate:
+            break
+
         if not message_reading_cooldown:
             for conversation in switcharoo.modmail.conversations(limit=100, state="mod"):
                 process_modmail(reddit, last_switcharoo, conversation)
+                if terminate:
+                    break
             message_reading_cooldown = 61
         message_reading_cooldown -= 1
 
-
+        sleeping = True
+        if terminate:
+            break
         time.sleep(consts.sleep_time)
+        sleeping = False
+        if terminate:
+            break
 
     except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
         print("Unable to connect to Reddit, is the internet down?")
@@ -103,3 +143,9 @@ while True:
             reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
                 str(traceback.format_exc()).replace('\n', '\n    ')))
         raise
+
+    if terminate:
+        break
+#
+# if credentials.get("pid", False):
+#     os.unlink(credentials['pid'])

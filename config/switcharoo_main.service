@@ -1,0 +1,8 @@
+# ~/.config/systemd/user/switcharoo_main.service
+
+[Service]
+WorkingDirectory=~/switcharoo
+ExecStart=~/venv/bin/python ~/switcharoo/main.py
+
+[Install]
+WantedBy=multi-user.target
