@@ -34,5 +34,6 @@ jobs:
             cp ~/switcharoo/config/services/* ~/.config/systemd/user
             ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
             echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
+            crontab ~/switcharoo/config/cron.jobs
             systemctl --user daemon-reload
             systemctl --user start switcharoo_main.service

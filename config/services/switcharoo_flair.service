@@ -1,0 +1,12 @@
+# ~/.config/systemd/user/switcharoo_flair.service
+[Unit]
+Description=Switcharoohelper Flair service
+
+[Service]
+WorkingDirectory=%h/switcharoo
+ExecStart=%h/venv/bin/python %h/switcharoo/tools/userflair_update.py
+StandardOutput=file:/var/log/switcharoo/flair.log
+StandardError=file:/var/log/switcharoo/flair.log
+
+[Install]
+WantedBy=default.target
