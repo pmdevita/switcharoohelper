@@ -7,10 +7,10 @@ root = str(tools_folder.parent)
 if root not in sys.path:
     sys.path.append(root)
 
-import praw
-from core.credentials import get_credentials, CredentialsLoader
+from core.credentials import CredentialsLoader
 credentials = CredentialsLoader.get_credentials(tools_folder / "../credentials.ini")['reddit']
 
+import praw
 from core.history import SwitcharooLog
 from core import constants as consts
 

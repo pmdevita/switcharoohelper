@@ -3,15 +3,12 @@ import os
 from tests.shims import praw
 from datetime import datetime, timedelta
 
-from core.credentials import get_credentials, CredentialsLoader
+from core.credentials import CredentialsLoader
 from pathlib import Path
 # Configure config first
 tests_folder = Path(os.path.dirname(os.path.realpath(__file__)))
 credentials = CredentialsLoader().get_credentials(tests_folder / "configs/action.ini")
 
-from core.process import check_errors
-from core.history import SwitcharooLog
-from core.issues import IssueTracker
 from core.reddit import ReplyObject
 from core.action import increment_user_fixes
 

@@ -3,7 +3,7 @@ import os
 from tests.shims import praw
 from datetime import datetime
 
-from core.credentials import get_credentials, CredentialsLoader
+from core.credentials import CredentialsLoader
 from pathlib import Path
 # Configure config first
 tests_folder = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -95,9 +95,44 @@ class CheckErrors(unittest.TestCase):
                                                                           datetime(month=4, day=1, year=2021))
         roo, url, submission = gen_url_and_roo(reddit, last_switcharoo, "sub2", "user1",
                                                "000001", "aaaaab", "123abce", 3,
-                                               datetime(month=4, day=2, year=2021), init_db=True)
+                                               datetime(month=4, day=2, year=2021))
         reddit.submission("aaaaab").private = True
         reddit.comment("123abce", f"[Ah the ol' Reddit switcharoo!]({previous_url})", "user1",
+                       datetime(month=4, day=2, year=2020), private=True)
+        expected_tracker = IssueTracker()
+        expected_tracker.subreddit_privated = True
+        tracker = check_errors(reddit, last_switcharoo, roo, init_db=False, submission=submission)
+        self.assertTrue(tracker == expected_tracker)
+
+    def test_sub_privated_allowed(self):
+        reddit = praw.Reddit(username=credentials['reddit']['username'])
+        global last_switcharoo
+        last_switcharoo = reset_database(reddit, last_switcharoo)
+        last_switcharoo.update_privated_sub("sub2", allowed=True, update_requested=False)
+        previous_roo, previous_url, previous_submission = gen_url_and_roo(reddit, last_switcharoo, "sub1", "user1",
+                                                                          "000000", "aaaaaa", "123abcd", 3,
+                                                                          datetime(month=4, day=1, year=2021))
+        roo, url, submission = gen_url_and_roo(reddit, last_switcharoo, "sub2", "user1",
+                                               "000001", "aaaaab", "123abce", 3,
+                                               datetime(month=4, day=2, year=2021))
+        reddit.submission("aaaaab").private = True
+        reddit.comment("123abce", f"[Ah the ol' Reddit switcharoo!]({previous_url})", "user1",
+                       datetime(month=4, day=2, year=2020), private=True)
+        tracker = check_errors(reddit, last_switcharoo, roo, init_db=False, submission=submission)
+        self.assertTrue(tracker is None)
+
+    def test_sub_privated_inited(self):
+        reddit = praw.Reddit(username=credentials['reddit']['username'])
+        global last_switcharoo
+        last_switcharoo = reset_database(reddit, last_switcharoo)
+        previous_roo, previous_url, previous_submission = gen_url_and_roo(reddit, last_switcharoo, "sub1", "user1",
+                                                                          "000000", "aaaaaa", "123abcd", 3,
+                                                                          datetime(month=4, day=1, year=2021))
+        roo, url, submission = gen_url_and_roo(reddit, last_switcharoo, "sub2", "user2",
+                                               "000001", "aaaaab", "123abce", 3,
+                                               datetime(month=4, day=2, year=2021), init_db=True)
+        reddit.submission("aaaaab").private = True
+        reddit.comment("123abce", f"[Ah the ol' Reddit switcharoo!]({previous_url})", "user2",
                        datetime(month=4, day=2, year=2020), private=True)
         expected_tracker = IssueTracker()
         expected_tracker.subreddit_privated = True

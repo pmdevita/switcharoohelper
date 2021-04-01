@@ -292,11 +292,17 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             subreddit = s.subreddit
         except prawcore.exceptions.Forbidden:
             print("Forbidded from post, is the subreddit privated?")
+            # If this hasn't even been added to the database yet, we have no idea what subreddit
+            # To even make this kind of decision on. Reject it
+            if init_db:
+                tracker.subreddit_privated = True
+                return tracker
+            # Otherwise, attempt to check the database for this subreddit's status
             allowed = decide_subreddit_privated(reddit, last_switcharoo, roo.subreddit)
-            if allowed is None or allowed is True:
+            if allowed is None or allowed is True:  # If we are awaiting a response or allowing, pass judgement for now
                 return None
-            else:   # Subreddit has been permanently privated, mark broken
-                tracker.subreddit_privated = True  # Todo: Should be a different error
+            else:   # Mods marked this subreddit as been permanently privated, mark broken
+                tracker.subreddit_privated = True
                 return tracker
         else:
             tracker.comment_deleted = True

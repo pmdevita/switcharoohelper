@@ -5,16 +5,9 @@ import signal
 import prawcore.exceptions
 import os
 
-from core.credentials import get_credentials, CredentialsLoader
+from core.credentials import CredentialsLoader
 reddit_creds = CredentialsLoader.get_credentials()['reddit']
 credentials = CredentialsLoader.get_credentials()['general']
-
-# if credentials.get("pid", False):
-#     pid = str(os.getpid())
-#     with open(credentials['pid'], "w") as f:
-#         f.write(pid)
-
-
 
 from core.process import process
 from core.history import SwitcharooLog
@@ -111,7 +104,7 @@ while True:
             break
 
         if not message_reading_cooldown:
-            for conversation in switcharoo.modmail.conversations(limit=100, state="mod"):
+            for conversation in switcharoo.modmail.conversations(limit=20, state="mod"):
                 process_modmail(reddit, last_switcharoo, conversation)
                 if terminate:
                     break
@@ -146,6 +139,3 @@ while True:
 
     if terminate:
         break
-#
-# if credentials.get("pid", False):
-#     os.unlink(credentials['pid'])

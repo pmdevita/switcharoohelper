@@ -3,7 +3,7 @@ import time
 import traceback
 import prawcore.exceptions
 
-from core.credentials import get_credentials, CredentialsLoader
+from core.credentials import CredentialsLoader
 from core.process import reprocess, double_check_link
 from core.history import SwitcharooLog
 from core import constants as consts

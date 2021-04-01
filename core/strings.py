@@ -79,7 +79,8 @@ class ModIssueStrings(IssueStrings):
                     "commenter and poster should be the same for the sake of consistency and to avoid duplicate " \
                     "posting."
     subreddit_privated = "the subreddit this roo is from is privated so most users will be unable to continue down " \
-                         "the roo chain through this one."
+                         "the roo chain through this one. If it has only temporarily been privated, try submitting " \
+                         "again after it has unprivated."
 
 
 class NewIssueIssues(ModIssueStrings):

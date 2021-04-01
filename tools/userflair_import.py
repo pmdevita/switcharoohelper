@@ -1,16 +1,11 @@
 import praw
-import time
-import traceback
-import prawcore.exceptions
+
 
 from core.credentials import get_credentials, CredentialsLoader
 credentials = CredentialsLoader.get_credentials("../credentials.ini")['reddit']
 
-from core.process import process
 from core.history import SwitcharooLog
 from core import constants as consts
-from core.action import PrintAction, ModAction
-from core.inbox import process_message, process_modmail
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],

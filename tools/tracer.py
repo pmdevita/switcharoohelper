@@ -1,20 +1,28 @@
+# Bootstrap the main library into the path
+import os
+import sys
+from pathlib import Path
+tools_folder = Path(os.path.dirname(os.path.realpath(__file__)))
+root = str(tools_folder.parent)
+if root not in sys.path:
+    sys.path.append(root)
+
+from core.credentials import CredentialsLoader
+credentials = CredentialsLoader.get_credentials(tools_folder / "../credentials.ini")['reddit']
+
 import psaw
 import praw.exceptions
+import prawcore.exceptions
 import time
 import pendulum
 import webbrowser
 from datetime import datetime, timedelta
 
-import prawcore.exceptions
-
-from core.credentials import CredentialsLoader
 from core import constants as consts
 from core import parse
 from core.history import SwitcharooLog
 from core.arguments import tracer as argparser
-from core.pushshift import get_comment_from_psaw, get_original_comment_from_psaw
 
-credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],

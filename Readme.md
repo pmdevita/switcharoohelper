@@ -25,18 +25,25 @@ And roos older than March 2019 are given an additional pass
 Create a file called `credentials.ini` in the root directory of this project 
 and in it place the following:
 ```ini
+[general]
+mode = development
+operator = reddit_username
+dry_run = False
+award = True
+
 [reddit]
-client_id = your-client-id
-client_secret = your-client-secret
-username = username-of-account
-password = password-of-account
+client_id = client-id
+client_secret = client-secret
+username = bot_username
+password = password
 
 [database]
 type = mysql|sqlite
-host = ip|domain
+host = hostname|ip
 username = username
 password = password
-database = switcharoo
+database = database
+
 ```
 
 then run `main.py`.

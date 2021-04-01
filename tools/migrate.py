@@ -7,10 +7,8 @@ import prawcore.exceptions
 from core.credentials import get_credentials, CredentialsLoader
 credentials = CredentialsLoader.get_credentials("../credentials.ini")['reddit']
 
-from core.process import reprocess, double_check_link
 from core.history import SwitcharooLog
 from core import constants as consts
-from core.action import PrintAction, ModAction
 from core.arguments import check_up as argparser
 
 
