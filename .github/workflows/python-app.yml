@@ -8,11 +8,6 @@ on:
     branches: [ master, production ]
   pull_request:
     branches: [ master, production ]
-  workflow_run:
-    workflows: ["Deploy to Production"]
-    branches: [ production ]
-    types:
-      - completed
 
 jobs:
   build:
