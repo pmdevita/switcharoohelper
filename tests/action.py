@@ -11,6 +11,7 @@ credentials = CredentialsLoader().get_credentials(tests_folder / "configs/action
 
 from core.reddit import ReplyObject
 from core.action import increment_user_fixes
+from core.history import SwitcharooLog
 
 
 def reset_database(reddit, last_switcharoo: SwitcharooLog = None):
