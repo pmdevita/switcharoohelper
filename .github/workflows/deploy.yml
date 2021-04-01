@@ -18,23 +18,23 @@ jobs:
     runs-on: ubuntu-latest
 
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-      # Steps represent a sequence of tasks that will be executed as part of the job
-      steps:
-        - name: SSH Remote Commands
-          uses: appleboy/ssh-action@v0.1.4
-          with:
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.USERNAME }}
-            key: ${{ secrets.KEY }}
-            port: ${{ secrets.PORT }}
-            script: |
-              whoami
-              systemctl --user stop switcharoo_main.service
-              cd ~/switcharoo
-              git pull origin master
-              cp ~/switcharoo/config/services/* ~/.config/systemd/user
-              ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
-              echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
-              crontab ~/switcharoo/config/cron.jobs
-              systemctl --user daemon-reload
-              systemctl --user start switcharoo_main.service
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            whoami
+            systemctl --user stop switcharoo_main.service
+            cd ~/switcharoo
+            git pull origin master
+            cp ~/switcharoo/config/services/* ~/.config/systemd/user
+            ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
+            echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
+            crontab ~/switcharoo/config/cron.jobs
+            systemctl --user daemon-reload
+            systemctl --user start switcharoo_main.service
