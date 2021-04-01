@@ -27,7 +27,13 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: whoami
+          script: |
+            whoami
+            systemctl --user stop switcharoohelper_main.service
+            cd ~/switcharoo
+            git pull origin production
+            cp ~/switcharoo/config/* ~/.config/systemd/user
+            systemctl --user start switcharoohelper_main.service
             
 
           
