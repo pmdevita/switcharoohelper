@@ -1,2 +1,2 @@
 40 2 * * 1 systemctl --user start switcharoo_flair
-35 */2 * * * cd ~/switcharoo && ~/venv/bin/python check_up.py -s last -l 20 --no-relink --unmute-delete
+35 2 * * * cd ~/switcharoo && ~/venv/bin/python check_up.py -s last -l 20 --no-relink --unmute-delete

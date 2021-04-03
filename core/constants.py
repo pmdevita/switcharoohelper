@@ -1,5 +1,5 @@
 bot_name = "SwitcharooHelper"
-version = "3.2.2"
+version = "3.2.3"
 user_agent = f"{bot_name} v{version} by /u/pmdevita"
 subreddit = "switcharoo"
 sleep_time = 120

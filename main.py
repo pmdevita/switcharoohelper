@@ -9,7 +9,7 @@ from core.credentials import CredentialsLoader
 reddit_creds = CredentialsLoader.get_credentials()['reddit']
 credentials = CredentialsLoader.get_credentials()['general']
 
-from core.process import process
+from core.process import process, reprocess
 from core.history import SwitcharooLog
 from core import constants as consts
 from core.action import PrintAction, ModAction
@@ -68,7 +68,7 @@ print("SwitcharooHelper v{} using {} Ctrl+C to stop".format(consts.version, acti
 while True:
     try:
         # Update the switcharoo log for any deleted posts
-        last_switcharoo.verify()
+        last_switcharoo.verify(reprocess, action)
         # Then grab the newest's submission ID
         last_check = last_switcharoo.last_submission()
         # If there is not one, grab the second newest submission (so that we start with the next, the newest)
@@ -77,10 +77,9 @@ while True:
         else:
             last_check = get_newest_id(switcharoo, 50)
 
-        submissions = []
+        # Get a list of new submissions
         # This "before" is a little confusing, it means before it in the listing but it would be after it time-wise
-        for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)}):
-            submissions.append(submission)
+        submissions = [submission for submission in switcharoo.new(params={"before": "t3_{}".format(last_check)})]
 
         if submissions:
             print("Processing new submissions...")

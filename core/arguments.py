@@ -8,6 +8,7 @@ check_up.add_argument('--no-delete-check', '-d', action="store_true", help="Disa
 check_up.add_argument('--no-relink', '-r', action="store_true", help="Disable asking for relinking")
 check_up.add_argument('--double-check-link', '-c', action="store_true", help="Enable double checking a comment is linked in the DB properly")
 check_up.add_argument('--unmute-delete', '-u', action="store_false", help="Unmute response when deleting submissions")
+check_up.add_argument('--include-meta', '-i', action="store_true", help="Also check meta posts for issues")
 
 
 

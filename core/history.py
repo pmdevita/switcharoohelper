@@ -276,7 +276,7 @@ class SwitcharooLog:
     def last_submission(self, offset=0):
         roo = None
         with db_session:
-            q = select(s for s in Switcharoo if Issues[issues_obj.submission_deleted] not in s.issues and Issues[
+            q = select(s for s in Switcharoo if True not in s.issues.bad and Issues[
                 issues_obj.submission_processing] not in s.issues).order_by(desc(Switcharoo.time)).limit(1,
                                                                                                          offset=offset)
             if q:
@@ -321,9 +321,11 @@ class SwitcharooLog:
                 self._link_reddit(roo)
         return roo
 
-    def get_roos(self, after_roo=None, after_time=None, limit=50):
+    def get_roos(self, after_roo=None, after_time=None, limit=50, meta=False):
         with db_session:
-            query = select(s for s in Switcharoo if s.link_post)
+            query = select(s for s in Switcharoo)
+            if not meta:
+                query = query.filter(lambda x: x.link_post)
             if after_roo or after_time:
                 time = after_time if after_time else after_roo.time
                 query = query.filter(lambda q: q.time < time)
@@ -345,7 +347,8 @@ class SwitcharooLog:
                 tracker[issue.id] = True
         return tracker
 
-    def verify(self):
+    # has to be passed like this to avoid circular imports, hopefully some restructuring later fixes this
+    def verify(self, reprocess, action, mute=False):
         """Verify roos until we have one last good roo"""
         with db_session:
             offset = 0
@@ -358,34 +361,11 @@ class SwitcharooLog:
                 for roo in q:
                     self._link_reddit(roo)
                     # Maybe use check_errors here instead now?
-                    try:
-                        # If this submission was in the middle of processing
-                        if Issues[issues_obj.submission_processing] in roo.issues:
-                            continue
-                        if roo.submission.banned_by:
-                            if not roo.submission.approved_by:
-                                roo.issues.add(Issues[issues_obj.submission_deleted])
-                                continue
-                        if hasattr(roo.submission, "removed"):
-                            if roo.submission.removed:
-                                roo.issues.add(Issues[issues_obj.submission_deleted])
-                                continue
-                        # If author is none submission was deleted
-                        if roo.submission.author is None:
-                            roo.issues.add(Issues[issues_obj.submission_deleted])
-                            continue
-                    except prawcore.exceptions.BadRequest:
-                        roo.issues.add(Issues[issues_obj.submission_deleted])
-                        continue
-                    if roo.link_post:
-                        try:
-                            roo.comment.refresh()
-                        except (praw.exceptions.ClientException, praw.exceptions.PRAWException):
-                            roo.issues.add(Issues[issues_obj.comment_deleted])
-                            continue
-                    # This one has passed the tests, should be good to go
-                    good = True
-                    break
+                    tracker = reprocess(self.reddit, roo, self, action, mute=mute, verbose=False)
+                    if tracker:
+                        if not tracker.has_bad_issues():
+                            good = True
+                            break
                 offset += 10
 
     def sync_issues(self):

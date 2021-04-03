@@ -36,21 +36,34 @@ def process(reddit, submission, last_switcharoo, action):
         last_switcharoo.update(roo, reset_issues=True)
 
 
-def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True):
+def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True, verbose=True):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
-    if stage == ALL_ROOS:
+    if stage == ALL_ROOS and verbose:
         roo.print()
     old_tracker = last_switcharoo.get_issues(roo)
+
+    # If this roo is currently being processed, don't touch it
+    if old_tracker.submission_processing:
+        if verbose:
+            print("Roo {roo.id} is mid-processing, cannot be checked")
+        return None
 
     if roo.submission:
         new_tracker = check_errors(reddit, last_switcharoo, roo, submission=roo.submission)
     else:
         new_tracker = check_errors(reddit, last_switcharoo, roo, comment=roo.comment)
 
+    if not roo.link_post:
+        # We're just updating a meta post with current removal status
+        if old_tracker != new_tracker:
+            last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
+        return new_tracker
+
     if new_tracker is None:
-        print(f"Roo {roo.id} cannot be processed at the moment")
-        return
+        if verbose:
+            print(f"Roo {roo.id} cannot be processed at the moment")
+        return new_tracker
 
     request = last_switcharoo.check_request(roo)
     reply_object = ReplyObject.from_roo(roo)
@@ -62,32 +75,33 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     # it should be updated immediately to be removed from the chain
     if new_tracker.has_bad_issues() or old_tracker.user_noncompliance:
         if old_tracker.has_bad_issues():
-            roo.print()
-            print("Roo was already bad")
+            if verbose:
+                roo.print()
+                print("Roo was already bad")
         else:
-            roo.print()
-            print("Roo has gone bad")
+            if verbose:
+                roo.print()
+                print("Roo has gone bad")
             action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
             new_tracker.submission_deleted = True
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
-        return
+        return new_tracker
     else:
         # If this roo was miraculously cured of bad issues
         if old_tracker.has_bad_issues():
             # Then reinstate it.
             print(f"Roo {roo.id} was miraculously cured of bad issues")
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
-            return
+            return new_tracker
 
     if new_tracker.has_issues():
         # If this is after they were supposed to fix something, gently ask them again
         # If this was long after they were supposed to fix something and nothing happened, delete the post
-        added, removed = old_tracker.diff(new_tracker)
-        if parse.has_responded_to_post(roo.submission) and not request:
-            print("Have previously responded, adding to DB")
-            request = last_switcharoo.update_request(roo, requests=1)
+        # if parse.has_responded_to_post(roo.submission) and not request:
+        #     print("Have previously responded, adding to DB")
+        #     request = last_switcharoo.update_request(roo, requests=1)
         # Has the issue set changed since last time
-        if len(added) == 0 and len(removed) == 0:
+        if old_tracker == new_tracker:
             print("Issues unchanged")
             if not request:
                 request = last_switcharoo.update_request(roo, requests=0)
@@ -95,7 +109,6 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
             action.act_again(reply_object, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
-            print(added, removed)
             # New situation, reset the request if it's there
             if request:
                 request = last_switcharoo.reset_request(request=request)
@@ -125,6 +138,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     if stage == ALL_ROOS:
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
 
+    return new_tracker
 
 def add_comment(reddit, last_switcharoo, link):
     url = parse.RedditURL(link)
@@ -197,6 +211,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 if parse.only_reddit_url(submission.title, submission.selftext):
                     tracker.submission_is_meta = True
                     return tracker
+            # Removed self submissions should be kept track of as well
+            if submission.removed_by_category is not None or submission.banned_at_utc is not None \
+                    or submission.selftext == "[deleted]":
+                tracker.submission_deleted = True
             return tracker
 
         # Verify it is a link to a reddit thread

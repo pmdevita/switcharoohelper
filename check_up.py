@@ -71,7 +71,7 @@ try:
     # Mark all bad roos (or unmark bad roos)
     if start:
         start = last_switcharoo.get_roo(start)
-    roos = last_switcharoo.get_roos(after_roo=start, limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT)
+    roos = last_switcharoo.get_roos(after_roo=start, limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT, meta=args.include_meta)
     if limit:
         limit -= DB_LIMIT
 
@@ -101,7 +101,8 @@ try:
 
         if roos:
             roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0],
-                                            limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT)
+                                            limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
+                                            meta=args.include_meta)
             if limit:
                 limit -= DB_LIMIT
 
