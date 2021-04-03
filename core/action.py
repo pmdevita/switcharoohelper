@@ -1,7 +1,7 @@
 from random import randrange
 from datetime import datetime, timedelta
 from core.issues import *
-from core.strings import BLANK, ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
+from core.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
 from core.constants import ALL_ROOS
 from core.reddit import ReplyObject, UserDoesNotExist
@@ -78,8 +78,9 @@ class BaseAction:
         else:
             print("Still waiting on cooldown")
 
-    def thank_you(self, roo):
-        reply_object = ReplyObject.from_roo(roo)
+    def thank_you(self, roo, reply_object: ReplyObject = None):
+        if not reply_object:
+            reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
     def reset(self):
@@ -137,7 +138,7 @@ class PrintAction(BaseAction):
 
 
 class ModAction(BaseAction):
-    def thank_you(self, roo, award, reply_object: ReplyObject = None):
+    def thank_you(self, roo, reply_object: ReplyObject = None):
         if not reply_object:
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
@@ -167,7 +168,7 @@ class ModAction(BaseAction):
 
         for issue in issues:
             string = getattr(issue_strings, issue.name, None)
-            if string == BLANK:
+            if string is None:
                 continue
             if not string:
                 raise Exception(f"Unsupported issue {issue.name} for string set {issue_strings}")
@@ -289,6 +290,12 @@ class ModAction(BaseAction):
         # input()
         # Reply and delete (if that is what we are supposed to do)!
 
+        if issubclass(strings, DeleteStrings):
+            already_deleted = reply_object.delete()
+            # If this was already deleted, mute ourselves
+            if already_deleted:
+                mute = True
+
         if not mute:
             try:
                 reply_object.reply(strings.subject, message)
@@ -297,8 +304,6 @@ class ModAction(BaseAction):
                 # That gets detected here. We then log the issue and then it will get picked up next run
                 print("Tried to fix a submission with no user, marking as noncompliant")
                 issues.user_noncompliance = True
-        if issubclass(strings, DeleteStrings):
-            reply_object.delete()
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
         #                                                 "{}".format(submission.url))

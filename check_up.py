@@ -35,6 +35,7 @@ action = ModAction(reddit)
 last_switcharoo = SwitcharooLog(reddit)
 last_switcharoo.sync_issues()
 
+
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
     return [i for i in subreddit.new(params={"limit": "1"})][index].id
@@ -84,7 +85,7 @@ try:
         if not args.no_delete_check:
             print("\nChecking for deleted/bad roos\n")
             for roo in roos:
-                reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD)
+                reprocess(reddit, roo, last_switcharoo, action, stage=consts.ONLY_BAD, mute=args.unmute_delete)
 
         # Now remove ignored posts
         # for roo in roos:

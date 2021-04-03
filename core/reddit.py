@@ -1,6 +1,6 @@
 import praw.models
 import praw.exceptions
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.credentials import CredentialsLoader
 
 creds = CredentialsLoader.get_credentials()['general']
@@ -49,14 +49,23 @@ class ReplyObject:
             redditor = self.object.author
             redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
 
+    def message(self, subject, message):
+        pass
+
     def delete(self):
         if self.dry_run:
-            return
+            return True  # Mute just in case in dry runs
         if isinstance(self.object, praw.models.Submission):
             if not self.object.removed_by:
                 self.object.mod.remove()
+                return False
             else:
                 print("Not removing since it was already removed")
+                return True
+
+    def can_reply(self):
+        # Just to be absolutely sure we can
+        return (self.created - timedelta(seconds=5)) > (datetime.now() - timedelta(days=180))
 
     @property
     def permalink(self):

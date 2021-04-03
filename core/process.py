@@ -36,7 +36,7 @@ def process(reddit, submission, last_switcharoo, action):
         last_switcharoo.update(roo, reset_issues=True)
 
 
-def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD):
+def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS:
@@ -67,7 +67,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         else:
             roo.print()
             print("Roo has gone bad")
-            action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=True)
+            action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
             new_tracker.submission_deleted = True
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return
@@ -413,7 +413,7 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 # However, roos that aren't from this time get no such special privilege and are marked wrong
                 if not (datetime(year=2019, month=2, day=23) > created and
                         comment_url.thread_id == last_good_submission.thread_id):
-                    # I dunno what the user linked but it didn't link the last good or last posted
+                    # I dunno what the user linked but they didn't link any switcharoo from the database
                     tracker.comment_linked_wrong = True
     else:
         print("Didn't have a last submission to check against")

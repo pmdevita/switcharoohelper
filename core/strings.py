@@ -1,8 +1,6 @@
 import json
 from core.constants import CONTEXT_HEADER
 
-BLANK = 0
-
 
 def format_context(context):
     return f"[]({CONTEXT_HEADER}{{{json.dumps(context)}}})"
@@ -74,7 +72,7 @@ class ModIssueStrings(IssueStrings):
                          "Did you copy it correctly?"
     user_noncompliance = "you have ignored the request to fix the linking problems. Contact the moderators " \
                          "to have your post reinstated."
-    submission_deleted = BLANK  # maybe should be None?
+    submission_deleted = None
     user_mismatch = "the user submitting this roo is not the same as the user who created the roo comment. Both the " \
                     "commenter and poster should be the same for the sake of consistency and to avoid duplicate " \
                     "posting."
