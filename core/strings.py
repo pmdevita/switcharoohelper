@@ -128,6 +128,7 @@ class ModActionStrings:
 
 class WarnStrings(ModActionStrings):
     single_reason = "Unfortunately, {}\n\n"
+    # single_reason = "There's just one thing I need fixed with your roo. {}\n\n" # This is gonna take some rewriting
     multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
 
