@@ -156,6 +156,9 @@ class ModAction(BaseAction):
         if not strings:
             strings = DeleteStrings if issues.has_bad_issues() else WarnStrings
 
+        # Do we need to be concerned about different formatting for messages?
+        message_aware = strings.message_issue_strings is not None
+
         # Get strings for each issue
         issue_strings = strings.issue_strings
 
@@ -163,8 +166,37 @@ class ModAction(BaseAction):
         if len(issues) > 1 and strings.multi_issue_strings is not None:
             issue_strings = strings.multi_issue_strings
 
+        # If this is message aware, swap for those strings
+        if message_aware:
+            if not reply_object.can_reply():
+                issue_strings = strings.message_issue_strings
+
+                # If we have multiple issues and the string set has a different issue set for that, use it
+                if len(issues) > 1 and strings.multi_issue_strings is not None:
+                    issue_strings = strings.message_multi_issue_strings
+
+
         # Should the bot ask the mod team for further assistance?
         request_assistance = False
+
+        last_good_url = None
+        context = "0"
+        # If we do have context, format the link ourselves with it
+        # Todo: replace with RedditURL implementation
+        if last_good_submission.context is not None:
+            context = str(last_good_submission.context)
+            if last_good_submission.context > 0:
+                last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
+                                f"?context={last_good_submission.context} "
+        if not last_good_url:
+            if last_good_submission.submission:
+                last_good_url = last_good_submission.submission.url
+            else:
+                last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
+
+        comment_url = reply_object.permalink
+        if reply_object.is_submission():
+            comment_url = reply_object.get_comment()
 
         for issue in issues:
             string = getattr(issue_strings, issue.name, None)
@@ -172,19 +204,8 @@ class ModAction(BaseAction):
                 continue
             if not string:
                 raise Exception(f"Unsupported issue {issue.name} for string set {issue_strings}")
-            last_good_url = None
-            # If we do have context, format the link ourselves with it
-            if last_good_submission.context is not None:
-                if last_good_submission.context > 0:
-                    last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
-                                    f"?context={last_good_submission.context} "
-            if not last_good_url:
-                if last_good_submission.submission:
-                    last_good_url = last_good_submission.submission.url
-                else:
-                    last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
-
-            message_lines.append(string.format(last_good_url=last_good_url))
+            message_lines.append(string.format(last_good_url=last_good_url, last_good_context=context,
+                                               comment_url=comment_url))
 
         # What issues have been raised? Add their messages to the list
         # if issues.submission_lacks_context:
@@ -298,7 +319,7 @@ class ModAction(BaseAction):
 
         if not mute:
             try:
-                reply_object.reply(strings.subject, message)
+                reply_object.reply(strings.subject, message, message_aware=message_aware)
             except UserDoesNotExist:
                 # Posts that don't have a user attached to them anymore are OK unless we need to change things
                 # That gets detected here. We then log the issue and then it will get picked up next run

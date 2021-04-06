@@ -40,21 +40,21 @@ class ModIssueStrings(IssueStrings):
                       "different account and look for your comment.\n\nIf you think your comment was " \
                       "removed by was that subreddit's moderators, please let us know so we can add it to " \
                       "the forbidden subs list. Also, sorry. It sucks when this happens."
-    comment_has_no_link = "your submission does not link to a switcharoo. It's very likely you linked the " \
+    comment_has_no_link = "your submission does not link to a switcharoo. This usually happens when you link the " \
                           "wrong comment. Read the sidebar or stickied \"how to\" post for more information."
-    comment_linked_wrong = "your switcharoo is not linked to the correct roo. Did you remember to sort the " \
-                           "subreddit by new? The correct link is \n\n{last_good_url}\n\nCan you please change it to " \
-                           "that? Thanks!"
+    comment_linked_wrong = "I'm not sure what you are linking into but it doesn't seem quite right. Can you change " \
+                           "your link to here instead?\n\n{last_good_url}\n\nThank you!"
     comment_lacks_context = "the roo you have **linked to in your comment** (not the URL you have submitted) is " \
                             "missing a `?context=x` suffix. Most likely, the roo'er previous to you left it out " \
                             "but it's possible you missed it in copying their link.\n\nGo to the switcharoo your " \
                             "comment links to and count how many comments above it are needed to understand the " \
                             "joke. Then, in the link in your comment, append `?context=x` to the end of the link, " \
                             "replacing x with the number of levels you counted. Thanks for fixing it!"
-    comment_linked_bad_roo = "your switcharoo links to a broken roo. Can you please change it to this link?\n\n" \
-                             "{last_good_url}\n\nThanks!"
-    submission_multiple_params = "your switcharoo had multiple '?' sections at the end of it. You can resubmit if you " \
-                                 "delete everything after and including the '?' in your URL and then append " \
+    comment_linked_bad_roo = "your switcharoo is not linked to the correct roo. Did you remember to sort the " \
+                             "subreddit by new? The correct link is \n\n{last_good_url}\n\nCan you please change it " \
+                             "to that? Thanks!"
+    submission_multiple_params = "your switcharoo had multiple '?' sections at the end of it. You can resubmit if " \
+                                 "you delete everything after and including the '?' in your URL and then append " \
                                  "`?context=x` to the end of the URL. Don't forget to relink your switcharoo to the " \
                                  "newest switcharoo submission!"
     submission_link_final_slash = "your switcharoo had a trailing slash (\"/\") at the end of it. This causes the " \
@@ -81,6 +81,19 @@ class ModIssueStrings(IssueStrings):
                          "again after it has unprivated."
 
 
+class WarnIssues(ModIssueStrings):
+    comment_linked_wrong = "Can you link your comment here instead? I'm not sure exactly what you linked but it " \
+                           "doesn't seem quite right to me.\n\n{last_good_url}."
+    comment_lacks_context = "Can you add context to the link in your comment? I think it should be " \
+                            "{last_good_context}, so the link should look like \n\n{last_good_url}"
+    comment_linked_bad_roo = "It looks like you linked the wrong roo. Can you link your comment here instead? " \
+                             "Remember to sort by new when copying your link!" \
+                             "\n\n{last_good_url}"
+    submission_linked_post = "Can you link your comment here instead? It looks like you linked an r/switcharoo " \
+                             "thread rather than the link to their comment. Don't forget to copy the right link!" \
+                             "\n\n{last_good_url}."
+
+
 class NewIssueIssues(ModIssueStrings):
     comment_linked_wrong = "link your comment to this link instead? {last_good_url}"
     comment_linked_bad_roo = "link your comment to this link instead? {last_good_url}"
@@ -89,6 +102,16 @@ class NewIssueIssues(ModIssueStrings):
                             "comment links to and count how many comments above it are needed to understand the " \
                             "joke. Then, in the link in your comment, append `?context=x` to the end of the link, " \
                             "replacing x with the number of levels you counted."
+
+
+class NewIssueMessageIssues(NewIssueIssues):
+    comment_linked_wrong = "change your comment here\n\n{comment_url}\n\n" \
+                           "to link to this comment instead? \n\n{last_good_url}"
+    comment_linked_bad_roo = "change your comment here\n\n{comment_url}\n\n" \
+                             "to link to this comment instead? \n\n{last_good_url}"
+    comment_lacks_context = "add/change the context in the link in your comment here?\n\n{comment_url}\n\n" \
+                            "I think it " \
+                            "should be {last_good_context}, so the link should look like \n\n{last_good_url}"
 
 
 class MultiNewIssueIssues(NewIssueIssues):
@@ -101,9 +124,16 @@ class MultiNewIssueIssues(NewIssueIssues):
                             "replacing x with the number of levels you counted."
 
 
+class MultiNewIssueMessageIssues(NewIssueMessageIssues):
+    pass
+
+
 class ModActionStrings:
     issue_strings = ModIssueStrings
     multi_issue_strings = None
+    message_issue_strings = None
+    message_multi_issue_strings = None
+
     subject = "Help needed to fix the switcharoo chain!"
     header = "{} First, thank you for contributing to /r/switcharoo! The sub only exists thanks to people " \
              "such as yourself who are willing to put the time in to keep the chain going. \n\n"
@@ -127,8 +157,8 @@ class ModActionStrings:
 
 
 class WarnStrings(ModActionStrings):
-    single_reason = "Unfortunately, {}\n\n"
-    # single_reason = "There's just one thing I need fixed with your roo. {}\n\n" # This is gonna take some rewriting
+    issue_strings = WarnIssues
+    single_reason = "There's just one thing I need fixed with your roo. {}\n\nThank you!\n\n"
     multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
 
@@ -141,6 +171,8 @@ class DeleteStrings(ModActionStrings):
 class NewIssueStrings(ModActionStrings):
     issue_strings = NewIssueIssues
     multi_issue_strings = MultiNewIssueIssues
+    message_issue_strings = NewIssueMessageIssues
+    message_multi_issue_strings = MultiNewIssueMessageIssues
     header = "{} It looks like there has been some changes to switcharoo chain around your comment. "
     single_reason = "Could you {}\n\nThank you!\n\n"
     multiple_reason = "Could you do the fix the following in your roo? \n\n{}\n\nThank you!\n\n"
@@ -148,7 +180,7 @@ class NewIssueStrings(ModActionStrings):
 
 class ReminderStrings(NewIssueStrings):
     header = "{}  "
-    single_reason = "It looks like you haven't quite fixed this yet. Could you {} Thank you!\n\n"
+    single_reason = "It looks like you haven't quite fixed this yet. Could you {}\n\nThank you!\n\n"
     multiple_reason = "It looks like you haven't quite fixed these issues yet. Could you do the fix " \
                       "the following in your roo? \n\n{}\n\nThank you!\n\n"
 

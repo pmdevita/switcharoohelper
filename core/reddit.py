@@ -25,7 +25,7 @@ class ReplyObject:
         a.roo = roo
         return a
 
-    def reply(self, subject, message):
+    def reply(self, subject, message, message_aware=False):
         if self.dry_run:
             return
 
@@ -42,9 +42,10 @@ class ReplyObject:
                             raise UserDoesNotExist
                     raise UserDoesNotExist
                 link = self.permalink
-                if self.roo:
-                    link = f"https://reddit.com{self.roo.comment.permalink}"
-                redditor.message(subject=subject, message=f"{link}\n\n{message}", from_subreddit="switcharoo")
+                new_message = message
+                if self.roo and not message_aware:
+                    new_message = f"https://reddit.com{self.roo.comment.permalink}\n\n{message}"
+                redditor.message(subject=subject, message=new_message, from_subreddit="switcharoo")
         elif isinstance(self.object, praw.models.Comment):
             redditor = self.object.author
             redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
@@ -65,6 +66,8 @@ class ReplyObject:
 
     def can_reply(self):
         # Just to be absolutely sure we can
+        if isinstance(self.object, praw.models.Comment):
+            return False
         return (self.created - timedelta(seconds=5)) > (datetime.now() - timedelta(days=180))
 
     @property
@@ -78,3 +81,13 @@ class ReplyObject:
     @property
     def created(self):
         return datetime.utcfromtimestamp(self.object.created_utc)
+
+    def is_comment(self):
+        return isinstance(self.object, praw.models.Comment)
+
+    def is_submission(self):
+        return isinstance(self.object, praw.models.Submission)
+
+    def get_comment(self):
+        if self.is_submission() and self.roo:
+            return f"https://reddit.com{self.roo.comment.permalink}"

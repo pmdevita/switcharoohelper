@@ -68,8 +68,14 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     request = last_switcharoo.check_request(roo)
     reply_object = ReplyObject.from_roo(roo)
 
-    # Requests made within the last month have 3 days to respond, requests made a week out have 7
-    grace_period = 3 if roo.time > datetime.now() - timedelta(days=30) else 7
+    # Scale cooldown time with age of roo
+    grace_period = 3
+    if roo.time < datetime.now() - timedelta(days=360):
+        grace_period = 30
+    if roo.time < datetime.now() - timedelta(days=180):
+        grace_period = 14
+    elif roo.time < datetime.now() - timedelta(days=30):
+        grace_period = 7
 
     # If this roo has bad issues or it was marked for noncompliance,
     # it should be updated immediately to be removed from the chain
