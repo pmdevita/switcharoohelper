@@ -11,17 +11,18 @@ class UserDoesNotExist(Exception):
 
 
 class ReplyObject:
-    def __init__(self, obj):
+    def __init__(self, obj, reply_to=None):
         self.object = obj
+        self.reply_to = reply_to
         self.roo = None
         self.dry_run = creds['dry_run'].lower() != "false"
 
     @classmethod
-    def from_roo(cls, roo):
+    def from_roo(cls, roo, reply_to=None):
         if roo.submission:
-            a = cls(roo.submission)
+            a = cls(roo.submission, reply_to)
         else:
-            a = cls(roo.comment)
+            a = cls(roo.comment, reply_to)
         a.roo = roo
         return a
 

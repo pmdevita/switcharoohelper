@@ -83,9 +83,10 @@ class ModIssueStrings(IssueStrings):
 
 class WarnIssues(ModIssueStrings):
     comment_linked_wrong = "Can you link your comment here instead? I'm not sure exactly what you linked but it " \
-                           "doesn't seem quite right to me.\n\n{last_good_url}."
-    comment_lacks_context = "Can you add context to the link in your comment? I think it should be " \
-                            "{last_good_context}, so the link should look like \n\n{last_good_url}"
+                           "doesn't seem quite right to me. Remember to sort by new when copying your link!" \
+                           "\n\n{last_good_url}"
+    comment_lacks_context = "Can you add context to the link in your comment? You might want to double check but I " \
+                            "think it should be {last_good_context}, so the link should look like \n\n{last_good_url}"
     comment_linked_bad_roo = "It looks like you linked the wrong roo. Can you link your comment here instead? " \
                              "Remember to sort by new when copying your link!" \
                              "\n\n{last_good_url}"
