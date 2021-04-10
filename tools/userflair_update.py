@@ -41,6 +41,8 @@ def remove_deleted_users(flairs):
         except prawcore.exceptions.NotFound:
             print(flair['user'], "no longer exists, omitting")
             delete_list.append(i)
+        except AttributeError:
+            pass
     for i in reversed(delete_list):
         flairs.pop(i)
     return flairs
