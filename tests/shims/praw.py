@@ -23,6 +23,7 @@ class Reddit:
 
 class Submission:
     def __init__(self, id, link_post: bool, body, date, author: str, subreddit, title="Roo Title", private=False):
+        self.id = id
         self.distinguished = False
         self.is_self = not link_post
         self.domain = "reddit.com"
@@ -35,6 +36,7 @@ class Submission:
         self.subreddit = subreddit
         self.created_utc = date.timestamp()
         self.private = private
+        self.permalink = f"/r/{subreddit}/comments/{id}/slug"
         if self.is_self:
             self.body = body
         else:
