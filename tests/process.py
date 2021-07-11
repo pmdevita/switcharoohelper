@@ -176,3 +176,19 @@ class CheckErrors(unittest.TestCase):
         tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
         self.assertTrue(tracker == expected_tracker)
 
+    def test_submission_linked_post(self):
+        reddit = praw.Reddit(username=credentials['reddit']['username'])
+        global last_switcharoo
+        last_switcharoo = reset_database(reddit, last_switcharoo)
+        previous_roo, previous_url, previous_submission = gen_url_and_roo(reddit, last_switcharoo, "sub1", "user1",
+                                                                          "000000", "aaaaaa", "123abcd", 3,
+                                                                          datetime(month=4, day=1, year=2021))
+        roo, url, submission = gen_url_and_roo(reddit, last_switcharoo, "sub1", "user1",
+                                               "000001", "aaaaab", "123abce", 3,
+                                               datetime(month=4, day=2, year=2021), init_db=True)
+        reddit.comment("123abce", f"[Ah the ol' Reddit switcharoo!](https://reddit.com{previous_submission.permalink})",
+                       "user1", datetime(month=4, day=2, year=2020))
+        expected_tracker = IssueTracker()
+        expected_tracker.submission_linked_post = True
+        tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
+        self.assertTrue(tracker == expected_tracker)

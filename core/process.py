@@ -361,6 +361,11 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 tracker.user_mismatch = True
                 return tracker
 
+    # If the comment url links to the switcharoo subreddit, report it
+    if comment_url.subreddit == "switcharoo":
+        tracker.submission_linked_post = True
+        return tracker
+
     # We'll need the last verified good switcharoo from here on
     last_good_submission = last_switcharoo.last_good(before_roo=roo, offset=0)
 
