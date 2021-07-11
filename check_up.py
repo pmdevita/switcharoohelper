@@ -1,3 +1,5 @@
+import datetime
+
 import praw
 import time
 import traceback
@@ -49,12 +51,12 @@ if not start:
     start = input()
     try:
         start = int(start)
-    except:
+    except ValueError:
         start = None
 else:
     try:
         start = int(start)
-    except:
+    except ValueError:
         if start == "last":
             start = None
         else:
@@ -67,11 +69,22 @@ if not limit:
 else:
     limit = int(limit)
 
+date_limit = None
+if args.date_limit:
+    try:
+        date_limit = datetime.datetime.fromisoformat(args.date_limit)
+    except Exception as e:
+        print("Unknown date string for date limit")
+        raise e
+
 try:
     # Mark all bad roos (or unmark bad roos)
     if start:
         start = last_switcharoo.get_roo(start)
-    roos = last_switcharoo.get_roos(after_roo=start, limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT, meta=args.include_meta)
+    roos = last_switcharoo.get_roos(after_roo=start,
+                                    limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
+                                    meta=args.include_meta,
+                                    date_limit=date_limit)
     if limit:
         limit -= DB_LIMIT
 
@@ -97,8 +110,6 @@ try:
             for roo in roos[:-2]:
                 reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
 
-
-
         if roos:
             roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0],
                                             limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
@@ -108,7 +119,7 @@ try:
 
     # time.sleep(consts.sleep_time)
 
-except prawcore.exceptions.RequestException:    # Unable to connect to Reddit
+except prawcore.exceptions.RequestException:  # Unable to connect to Reddit
     print("Unable to connect to Reddit, is the internet down?")
     time.sleep(consts.sleep_time * 2)
 

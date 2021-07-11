@@ -321,7 +321,7 @@ class SwitcharooLog:
                 self._link_reddit(roo)
         return roo
 
-    def get_roos(self, after_roo=None, after_time=None, limit=50, meta=False):
+    def get_roos(self, after_roo=None, after_time=None, limit=50, meta=False, date_limit: datetime = None):
         with db_session:
             query = select(s for s in Switcharoo)
             if not meta:
@@ -331,6 +331,8 @@ class SwitcharooLog:
                 query = query.filter(lambda q: q.time < time)
             if self.db_type == "sqlite" and after_roo:
                 query = query.filter(lambda x: x.id != after_roo.id)
+            if date_limit:
+                query = query.filter(lambda x: x.time > date_limit)
             query = query.order_by(desc(Switcharoo.time)).limit(limit)
             roos = list(query)
         for roo in roos:
