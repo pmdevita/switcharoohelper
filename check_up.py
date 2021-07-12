@@ -113,7 +113,8 @@ try:
         if roos:
             roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0],
                                             limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
-                                            meta=args.include_meta)
+                                            meta=args.include_meta,
+                                            date_limit=date_limit)
             if limit:
                 limit -= DB_LIMIT
 
