@@ -65,9 +65,9 @@ class ModIssueStrings(IssueStrings):
                             "post? Read the sidebar for more information."
     submission_is_meta = "your post appears to be a roo submitted as a text post. All switcharoos should be " \
                          "submitted as link posts for clarity and subreddit organization."
-    submission_linked_post = "your post linked the r/switcharoo post for the next roo, not the link to it's comment. " \
-                             "Your comment should link to the posted link given by the previous roo. The correct " \
-                             "link is {last_good_url}"
+    submission_linked_post = "your comment linked the r/switcharoo post for the next roo, not the link to it's " \
+                             "comment. Your comment should link to the posted link given by the previous roo. The " \
+                             "correct link is {last_good_url}"
     submission_bad_url = "something seems wrong with your submitted URL and I couldn't recognize it as a Reddit URL. " \
                          "Did you copy it correctly?"
     user_noncompliance = "you have ignored the request to fix the linking problems. Contact the moderators " \

@@ -85,7 +85,6 @@ class Switcharoo(db.Entity):
             print(f"Roo {self.id}")
 
 
-
 class Issues(db.Entity):
     type = Required(str)
     id = PrimaryKey(int)
