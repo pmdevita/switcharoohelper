@@ -63,3 +63,9 @@ def roo_id_info(id):
     print("Last good:", last_good_of_roo_id(id))
 
 
+def good_roos_before_bot():
+    return last_switcharoo.stats.num_of_roos(before=datetime(year=2018, day=12, month=2, hour=23))
+
+
+def good_roos_after_bot():
+    return last_switcharoo.stats.num_of_good_roos(after=datetime(year=2018, day=12, month=2, hour=23), axed_issues=False)

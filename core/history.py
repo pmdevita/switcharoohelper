@@ -294,7 +294,8 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roo
 
-    def search(self, thread_id=None, comment_id=None, submission_id=None, after_time=None, multiple=False, oldest=False):
+    def search(self, thread_id=None, comment_id=None, submission_id=None, after_time=None, multiple=False,
+               oldest=False):
         roo = None
         with db_session:
             query = select(s for s in Switcharoo)
@@ -337,7 +338,6 @@ class SwitcharooLog:
         for roo in roos:
             self._link_reddit(roo)
         return roos
-
 
     def get_issues(self, roo):
         tracker = IssueTracker()
@@ -388,7 +388,7 @@ class SwitcharooLog:
             roo = Switcharoo[roo.id]
             q = FixRequests.get(roo=roo)
             return q
-    
+
     def update_request(self, roo, time=None, requests=1):
         with db_session:
             roo = Switcharoo[roo.id]
@@ -456,13 +456,43 @@ class SwitcharooStats:
     def __init__(self, reddit):
         self.reddit = reddit
 
-    def num_of_good_roos(self, before=None, after=None, user=None, all_users=False):
+    def num_of_good_roos(self, before=None, after=None, user=None, all_users=False, axed_issues=False):
+        roo = None
+        # Issues that get a roo immediately axed
+        axed = [issues_obj.submission_lacks_context, issues_obj.submission_linked_thread,
+                issues_obj.comment_deleted,
+                issues_obj.submission_multiple_params, issues_obj.submission_link_final_slash,
+                issues_obj.submission_not_reddit,
+                issues_obj.submission_linked_post, issues_obj.submission_bad_url, issues_obj.user_mismatch,
+                issues_obj.subreddit_privated]
+        with db_session:
+            if all_users and not user:
+                q = select((s.user, count(s)) for s in Switcharoo if s.link_post)
+            else:
+                q = select(s for s in Switcharoo if s.link_post)
+            if axed_issues:
+                for i in axed:
+                    q = q.filter(lambda x: Issues[i] not in x.issues)
+            else:
+                q = q.filter(lambda x: True not in x.issues.bad)
+            if before:
+                q = q.filter(lambda x: x.time < before)
+            if after:
+                q = q.filter(lambda x: x.time > after)
+            if user:
+                q = q.filter(lambda x: x.user == user)
+            if all_users and not user:
+                return list(q)
+            else:
+                return count(q)
+
+    def num_of_roos(self, before=None, after=None, user=None, all_users=False):
         roo = None
         with db_session:
             if all_users and not user:
-                q = select((s.user, count(s)) for s in Switcharoo if True not in s.issues.bad and s.link_post)
+                q = select((s.user, count(s)) for s in Switcharoo if s.link_post and axed_issues not in s.issues)
             else:
-                q = select(s for s in Switcharoo if True not in s.issues.bad and s.link_post)
+                q = select(s for s in Switcharoo if s.link_post)
             if before:
                 q = q.filter(lambda x: x.time < before)
             if after:
