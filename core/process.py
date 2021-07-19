@@ -91,6 +91,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
                 print("Roo has gone bad")
             action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
             new_tracker.submission_deleted = True
+            last_switcharoo.reset_request(roo=roo)
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return new_tracker
     else:

@@ -382,6 +382,7 @@ def private_subreddit(last_switcharoo, subreddit, message):
 
 def increment_user_fixes(last_switcharoo, reply_object):
     if creds.get("award", "false").lower() == "true":
+        # Only award old posts, not new posts that were just wrong
         if reply_object.created < datetime.now() - timedelta(weeks=2):
             fixes = last_switcharoo.check_user_flair(reply_object.author.name)
             fixes = fixes.fixes if fixes else 0
