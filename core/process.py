@@ -28,10 +28,11 @@ def process(reddit, submission, last_switcharoo, action):
 
     # If it has issues, perform an action to correct it
     if tracker.has_issues():
-        action.process(tracker, ReplyObject(submission), last_switcharoo.last_good(before_roo=roo, offset=0))
+        last_good = last_switcharoo.last_good(before_roo=roo, offset=0)
+        action.process(tracker, ReplyObject(submission), last_good)
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
         if not tracker.has_bad_issues():
-            last_switcharoo.update_request(roo, requests=1)
+            last_switcharoo.update_request(roo, requests=1, linked_roo=last_good)
     else:
         last_switcharoo.update(roo, reset_issues=True)
 
@@ -106,29 +107,38 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         # if parse.has_responded_to_post(roo.submission) and not request:
         #     print("Have previously responded, adding to DB")
         #     request = last_switcharoo.update_request(roo, requests=1)
+
+        last_good = last_switcharoo.last_good(roo, offset=0)
+        # Double check the correct link hasn't changed since last time
+        # If it has we need to issue a new request for the new link
+        same_link = True
+        if request:
+            if request.linked_roo:
+                same_link = request.linked_roo == last_good
+
         # Has the issue set changed since last time
-        if old_tracker == new_tracker:
+        if old_tracker == new_tracker and same_link:
             print("Issues unchanged")
             if not request:
-                request = last_switcharoo.update_request(roo, requests=0)
+                request = last_switcharoo.update_request(roo, requests=0, linked_roo=last_good)
             # If we are within cooldown, remind them and increase remind count
-            action.act_again(reply_object, new_tracker, request, grace_period, stage, last_switcharoo.last_good(roo, offset=0))
+            action.act_again(reply_object, new_tracker, request, grace_period, stage, last_good)
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
             # New situation, reset the request if it's there
             if request:
                 request = last_switcharoo.reset_request(request=request)
-            request = last_switcharoo.update_request(roo, requests=0)
+            request = last_switcharoo.update_request(roo, requests=0, linked_roo=last_good)
             # Something has changed. Did we previously have issues too?
             # If we are within cooldown, remind them and increase remind count
             if old_tracker.has_issues():
                 # Either they fixed and a new issue came up or it's a new issue
                 action.act_again(reply_object, new_tracker, request, grace_period, stage,
-                                 last_switcharoo.last_good(roo, offset=0))
+                                 last_good)
             else:
                 # This was working before, the chain might have just changed around them.
                 action.act_again(reply_object, new_tracker, request, grace_period, stage,
-                                 last_switcharoo.last_good(roo, offset=0))
+                                 last_good)
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():

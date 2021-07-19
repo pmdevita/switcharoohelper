@@ -174,7 +174,7 @@ class NewIssueStrings(ModActionStrings):
     multi_issue_strings = MultiNewIssueIssues
     message_issue_strings = NewIssueMessageIssues
     message_multi_issue_strings = MultiNewIssueMessageIssues
-    header = "{} It looks like there has been some changes to switcharoo chain around your comment. "
+    header = "{} It looks like there has been some changes to switcharoo chain around your roo. "
     single_reason = "Could you {}\n\nThank you!\n\n"
     multiple_reason = "Could you do the fix the following in your roo? \n\n{}\n\nThank you!\n\n"
 

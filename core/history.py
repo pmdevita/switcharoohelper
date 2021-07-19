@@ -50,7 +50,8 @@ class Switcharoo(db.Entity):
     user = Optional(str, max_len=21)
     subreddit = Optional(str, max_len=21)
     issues = Set('Issues')
-    requests = Optional('FixRequests', cascade_delete=True)
+    requests = Optional('FixRequests', cascade_delete=True, reverse="roo")
+    fix_linked_from = Set('FixRequests', cascade_delete=False, reverse="linked_roo")
 
     def _link_reddit(self, reddit):
         self.reddit = reddit
@@ -96,6 +97,7 @@ class FixRequests(db.Entity):
     roo = PrimaryKey(Switcharoo)
     time = Required(datetime)
     attempts = Required(int)
+    linked_roo = Optional(Switcharoo)
 
     def not_responded_in_days(self, days):
         return self.time < datetime.now() - timedelta(days=days)
@@ -389,14 +391,16 @@ class SwitcharooLog:
             q = FixRequests.get(roo=roo)
             return q
 
-    def update_request(self, roo, time=None, requests=1):
+    def update_request(self, roo, time=None, requests=1, linked_roo=None):
         with db_session:
             roo = Switcharoo[roo.id]
             q = FixRequests.get(roo=roo)
+            if linked_roo:
+                linked_roo = Switcharoo[linked_roo.id]
             if q:
-                q.set(**self._params_without_none(time=time, requests=requests))
+                q.set(**self._params_without_none(time=time, requests=requests, linked_roo=linked_roo))
             else:
-                r = FixRequests(roo=roo, time=datetime.now(), attempts=requests)
+                r = FixRequests(roo=roo, time=datetime.now(), attempts=requests, linked_roo=linked_roo)
                 return r
 
     def reset_request(self, roo=None, request=None):
