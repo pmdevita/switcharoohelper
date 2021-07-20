@@ -96,8 +96,13 @@ while True:
             print("Checked up to", submissions[len(submissions) - 1].id)
             # save_last_data(last_data, last_switcharoo)
 
-        # for message in reddit.inbox.unread():
-        #     process_message(reddit, last_switcharoo, message)
+        for message in reddit.inbox.unread():
+            result = process_message(reddit, last_switcharoo, message, action)
+            if result:
+                message.mark_read()
+            action.reset()
+            if terminate:
+                break
 
         if terminate:
             break

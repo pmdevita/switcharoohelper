@@ -19,37 +19,68 @@ class ReplyObject:
 
     @classmethod
     def from_roo(cls, roo, reply_to=None):
-        if roo.submission:
-            a = cls(roo.submission, reply_to)
+        if roo:
+            if roo.submission:
+                a = cls(roo.submission, reply_to)
+            else:
+                a = cls(roo.comment, reply_to)
+            a.roo = roo
         else:
-            a = cls(roo.comment, reply_to)
-        a.roo = roo
+            a = cls(reply_to, reply_to)
         return a
 
     def reply(self, subject, message, message_aware=False):
         if self.dry_run:
             return
 
+        if self.reply_to:
+            if isinstance(self.reply_to, praw.models.Submission):
+                try:
+                    # Attempt to comment on the submission
+                    comment = self.reply_to.reply(message)
+                    comment.mod.distinguish()
+                except praw.exceptions.RedditAPIException:
+                    # If it fails, try to message them the normal way
+                    pass
+            elif isinstance(self.reply_to, praw.models.Comment):
+                try:
+                    # Attempt to comment on the comment
+                    comment = self.reply_to.reply(message)
+                    comment.mod.distinguish()
+                except praw.exceptions.RedditAPIException:
+                    # If it fails, try to message them the normal way
+                    pass
+
         if isinstance(self.object, praw.models.Submission):
             try:
+                # Attempt to comment on the submission
                 comment = self.object.reply(message)
                 comment.mod.distinguish()
             except praw.exceptions.RedditAPIException:
-                redditor = self.object.author
-                if redditor is None:
-                    if self.roo:
-                        redditor = self.roo.comment.author
-                        if redditor is None:
-                            raise UserDoesNotExist
-                    raise UserDoesNotExist
-                link = self.permalink
-                new_message = message
-                if self.roo and not message_aware:
-                    new_message = f"https://reddit.com{self.roo.comment.permalink}\n\n{message}"
-                redditor.message(subject=subject, message=new_message, from_subreddit="switcharoo")
+                # If that fails, attempt to message them instead
+                self._backup_message(subject, message, f"https://reddit.com{self.roo.comment.permalink}", message_aware)
         elif isinstance(self.object, praw.models.Comment):
-            redditor = self.object.author
-            redditor.message(subject=subject, message=f"{self.permalink}\n\n{message}", from_subreddit="switcharoo")
+            try:
+                # Attempt to comment on the comment
+                comment = self.object.reply(message)
+                comment.mod.distinguish()
+            except praw.exceptions.RedditAPIException:
+                # If that fails, attempt to message them instead
+                self._backup_message(subject, message, self.permalink, message_aware)
+
+    def _backup_message(self, subject, message, link, message_aware=False):
+        redditor = self.object.author
+        if redditor is None:
+            if self.roo:
+                redditor = self.roo.comment.author
+                if redditor is None:
+                    raise UserDoesNotExist
+            raise UserDoesNotExist
+        new_message = message
+        # If this message is not message aware (formatted for PMing) then add the link in
+        if self.roo and not message_aware:
+            new_message = f"{link}\n\n{message}"
+        redditor.message(subject=subject, message=new_message, from_subreddit="switcharoo")
 
     def message(self, subject, message):
         pass

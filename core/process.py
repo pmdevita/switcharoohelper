@@ -42,7 +42,8 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
         last_switcharoo.update(roo, reset_issues=True)
 
 
-def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True, verbose=True):
+def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True, verbose=True,
+              reply_object=None):
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS and verbose:
@@ -72,7 +73,8 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         return new_tracker
 
     request = last_switcharoo.check_request(roo)
-    reply_object = ReplyObject.from_roo(roo)
+    if not reply_object:
+        reply_object = ReplyObject.from_roo(roo)
 
     # Scale cooldown time with age of roo
     grace_period = 3
@@ -148,7 +150,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
-            action.thank_you(roo)
+            action.thank_you(reply_object=reply_object)
             increment_user_fixes(last_switcharoo, reply_object)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine

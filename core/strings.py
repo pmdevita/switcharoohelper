@@ -64,7 +64,10 @@ class ModIssueStrings(IssueStrings):
     submission_not_reddit = "the link leads outside of reddit. Did you mean to submit a meta " \
                             "post? Read the sidebar for more information."
     submission_is_meta = "your post appears to be a roo submitted as a text post. All switcharoos should be " \
-                         "submitted as link posts for clarity and subreddit organization."
+                         "submitted as link posts for clarity and subreddit organization.\n\nIf you are submitting " \
+                         "a discussion post and not a roo, reply \"Not a roo\" to this comment and I'll approve it." \
+                         "If this is roo, please resubmit it as a link post.\n\nThank you!\n" \
+                         f"{format_context({'decision-type': 'meta-roo'})}"
     submission_linked_post = "your comment linked the r/switcharoo post for the next roo, not the link to it's " \
                              "comment. Your comment should link to the posted link given by the previous roo. The " \
                              "correct link is {last_good_url}"

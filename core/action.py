@@ -138,13 +138,13 @@ class PrintAction(BaseAction):
 
 
 class ModAction(BaseAction):
-    def thank_you(self, roo, reply_object: ReplyObject = None):
+    def thank_you(self, roo=None, reply_object: ReplyObject = None):
         if not reply_object:
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         time = reply_object.created
-        if time > datetime(year=2021, month=1, day=1):
+        if time > datetime(year=2021, month=6, day=1):
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):

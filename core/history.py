@@ -228,9 +228,12 @@ class SwitcharooLog:
 
         return roo
 
-    def get_roo(self, roo_id):
+    def get_roo(self, roo_id=None, submission_id=None):
         with db_session:
-            r = Switcharoo.get(id=roo_id)
+            if roo_id:
+                r = Switcharoo.get(id=roo_id)
+            else:
+                r = Switcharoo.get(submission_id=submission_id)
             if r:
                 self._link_reddit(r)
             return r
