@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from core.credentials import CredentialsLoader
 
 creds = CredentialsLoader.get_credentials()['general']
+username = CredentialsLoader.get_credentials()['reddit']['username']
 
 
 class UserDoesNotExist(Exception):
@@ -39,6 +40,7 @@ class ReplyObject:
                     # Attempt to comment on the submission
                     comment = self.reply_to.reply(message)
                     comment.mod.distinguish()
+                    return
                 except praw.exceptions.RedditAPIException:
                     # If it fails, try to message them the normal way
                     pass
@@ -47,6 +49,7 @@ class ReplyObject:
                     # Attempt to comment on the comment
                     comment = self.reply_to.reply(message)
                     comment.mod.distinguish()
+                    return
                 except praw.exceptions.RedditAPIException:
                     # If it fails, try to message them the normal way
                     pass
@@ -84,6 +87,20 @@ class ReplyObject:
 
     def message(self, subject, message):
         pass
+
+    def approve(self, only_if_self=True):
+        if self.dry_run:
+            return True  # Mute just in case in dry runs
+        if isinstance(self.object, praw.models.Submission):
+            allow = True
+            if only_if_self:
+                allow = self.object.removed_by == username
+            if self.object.removed_by and allow:
+                self.object.mod.approve()
+                return False
+            else:
+                print("Not approving since it was already removed")
+                return True
 
     def delete(self):
         if self.dry_run:

@@ -63,6 +63,10 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
 
     if not roo.link_post:
         # We're just updating a meta post with current removal status
+        # If a meta post doesn't already have a submission_is_meta issue, remove it
+        # It can't be added after the initial check to prevent deleting approved meta posts
+        if not old_tracker.submission_is_meta and new_tracker.submission_is_meta:
+            new_tracker.submission_is_meta = False
         if old_tracker != new_tracker:
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return new_tracker

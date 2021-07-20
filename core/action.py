@@ -274,7 +274,7 @@ class ModAction(BaseAction):
             #                      "to have your post reinstated.")
             resubmit = False
 
-        if issues.user_mismatch or issues.subreddit_privated:
+        if issues.user_mismatch or issues.subreddit_privated or issues.submission_is_meta:
             resubmit = False
 
         # Choose template based on action
@@ -352,6 +352,13 @@ def modmail_action(last_switcharoo, context, message):
         return private_subreddit(last_switcharoo, context["subreddit"], message)
 
 
+def inbox_action(reply_object, last_switcharoo, context, message):
+    decision_type = context.get("decision-type", None)
+    if decision_type == "meta-roo":
+        if "not a roo" in message.body.lower():
+            return restore_meta(reply_object, last_switcharoo)
+
+
 def private_subreddit(last_switcharoo, subreddit, message):
     match = REPatterns.private_subreddit_response.findall(message)
     if match:
@@ -387,3 +394,12 @@ def increment_user_fixes(last_switcharoo, reply_object):
             fixes = last_switcharoo.check_user_flair(reply_object.author.name)
             fixes = fixes.fixes if fixes else 0
             last_switcharoo.update_user_flair(user=reply_object.author.name, fixes=fixes + 1)
+
+
+def restore_meta(reply_object, last_switcharoo):
+    issues = last_switcharoo.get_issues(reply_object.roo)
+    if issues.submission_is_meta:
+        reply_object.approve()
+        issues.submission_is_meta = False
+        last_switcharoo.update(reply_object.roo, roo_issues=issues, reset_issues=True)
+        return "Post approved!\n\n" + ModActionStrings.footer

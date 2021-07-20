@@ -188,13 +188,13 @@ def only_reddit_url(title, body):
         # Removes the link markup essentially
         total_len -= (end - start) - (len(groups[0]) + len(groups[1]))
 
-        print("link found", groups, total_len)
+        # print("link found", groups, total_len)
         no_link = False
 
         # Is the embedded link a reddit link?
         reddit_match = REPatterns.reddit_detect.match(groups[1])
         if reddit_match:
-            print("reddit match", reddit_match)
+            # print("reddit match", reddit_match)
             total_len -= len(groups[1])
             if total_len <= threshold:
                 return True
