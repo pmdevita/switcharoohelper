@@ -52,6 +52,7 @@ class Switcharoo(db.Entity):
     issues = Set('Issues')
     requests = Optional('FixRequests', cascade_delete=True, reverse="roo")
     fix_linked_from = Set('FixRequests', cascade_delete=False, reverse="linked_roo")
+    delete_later = Optional('DeleteLater', cascade_delete=True)
 
     def _link_reddit(self, reddit):
         self.reddit = reddit
@@ -140,6 +141,11 @@ class UserFlair(db.Entity):
     user = PrimaryKey(str, max_len=21)
     roos = Required(int, default=0)
     fixes = Required(int, default=0)
+
+
+class DeleteLater(db.Entity):
+    roo = PrimaryKey(Switcharoo)
+
 
 # set_sql_debug(True)
 
@@ -454,6 +460,13 @@ class SwitcharooLog:
                 f.set(**self._params_without_none(roos=roos, fixes=fixes))
             else:
                 f = UserFlair(user=user, **self._params_without_none(roos=roos, fixes=fixes))
+
+    def delete_later(self, roo):
+        with db_session:
+            r = Switcharoo[roo.id]
+            d = DeleteLater.get(roo=r)
+            if not d:
+                r = DeleteLater(roo=r)
 
 
 class SwitcharooStats:

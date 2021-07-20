@@ -16,13 +16,13 @@ creds = CredentialsLoader.get_credentials()['general']
 DRY_RUN = creds['dry_run'].lower() != "false"
 
 
-def process(reddit, submission, last_switcharoo, action):
+def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
     # First, add this submission to the database
+    # Add with submission processing issue to prevent rescans from interfering during add
     tracker = IssueTracker()
     tracker.submission_processing = True
     roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name,
-                              roo_issues=tracker,
-                              time=datetime.utcfromtimestamp(submission.created_utc))
+                              roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
     # Create an issue tracker made from it's errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
@@ -31,7 +31,12 @@ def process(reddit, submission, last_switcharoo, action):
         last_good = last_switcharoo.last_good(before_roo=roo, offset=0)
         action.process(tracker, ReplyObject(submission), last_good)
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
-        if not tracker.has_bad_issues():
+        # If this roo has bad issues, we'll probably want to delete it later since it
+        # was immediately deleted, making it not really useful
+        if tracker.has_bad_issues():
+            last_switcharoo.delete_later(roo)
+        # If the roo doesn't have bad issues, we need to track the repair of it
+        else:
             last_switcharoo.update_request(roo, requests=1, linked_roo=last_good)
     else:
         last_switcharoo.update(roo, reset_issues=True)
