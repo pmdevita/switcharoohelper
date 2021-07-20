@@ -371,7 +371,7 @@ class SwitcharooLog:
                     self._link_reddit(roo)
                     # Maybe use check_errors here instead now?
                     tracker = reprocess(self.reddit, roo, self, action, mute=mute, verbose=False)
-                    if tracker:
+                    if tracker is not None:
                         if not tracker.has_bad_issues():
                             good = True
                             break
