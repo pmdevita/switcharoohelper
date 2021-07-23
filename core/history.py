@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, \
-    TransactionIntegrityError, count
+    TransactionIntegrityError, count, exists
 from core.credentials import CredentialsLoader
 from core.issues import issues_list, GetIssues
 import praw
@@ -494,7 +494,7 @@ class SwitcharooStats:
                 for i in axed:
                     q = q.filter(lambda x: Issues[i] not in x.issues)
             else:
-                q = q.filter(lambda x: True not in x.issues.bad)
+                q = q.where(lambda s: True not in s.issues.bad)
             if before:
                 q = q.filter(lambda x: x.time < before)
             if after:
