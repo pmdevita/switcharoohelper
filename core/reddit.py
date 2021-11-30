@@ -34,19 +34,19 @@ class ReplyObject:
         if self.dry_run:
             return
 
+        # If this user doesn't exist, it's not worth attempting to contact them
+        redditor = self.object.author
+        if redditor is None:
+            if self.roo:
+                redditor = self.roo.comment.author
+                if redditor is None:
+                    raise UserDoesNotExist
+            raise UserDoesNotExist
+
         if self.reply_to:
-            if isinstance(self.reply_to, praw.models.Submission):
+            if isinstance(self.reply_to, praw.models.Submission) or isinstance(self.reply_to, praw.models.Comment):
                 try:
                     # Attempt to comment on the submission
-                    comment = self.reply_to.reply(message)
-                    comment.mod.distinguish()
-                    return
-                except praw.exceptions.RedditAPIException:
-                    # If it fails, try to message them the normal way
-                    pass
-            elif isinstance(self.reply_to, praw.models.Comment):
-                try:
-                    # Attempt to comment on the comment
                     comment = self.reply_to.reply(message)
                     comment.mod.distinguish()
                     return
@@ -73,12 +73,6 @@ class ReplyObject:
 
     def _backup_message(self, subject, message, link, message_aware=False):
         redditor = self.object.author
-        if redditor is None:
-            if self.roo:
-                redditor = self.roo.comment.author
-                if redditor is None:
-                    raise UserDoesNotExist
-            raise UserDoesNotExist
         new_message = message
         # If this message is not message aware (formatted for PMing) then add the link in
         if self.roo and not message_aware:
@@ -117,7 +111,9 @@ class ReplyObject:
         # Just to be absolutely sure we can
         if isinstance(self.object, praw.models.Comment):
             return False
-        return (self.created - timedelta(seconds=5)) > (datetime.now() - timedelta(days=180))
+        # Reddit changed archive thread behavior, we should be able to respond to any thread now
+        # return (self.created - timedelta(seconds=5)) > (datetime.now() - timedelta(days=180))
+        return True
 
     @property
     def permalink(self):

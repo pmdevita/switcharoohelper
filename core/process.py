@@ -168,6 +168,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
 
     return new_tracker
 
+
 def add_comment(reddit, last_switcharoo, link):
     url = parse.RedditURL(link)
     comment = reddit.comment(url.comment_id)
