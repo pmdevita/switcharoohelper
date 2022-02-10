@@ -133,8 +133,9 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
             print("Issues unchanged")
             if not request:
                 request = last_switcharoo.update_request(roo, requests=0, linked_roo=last_good)
-            # If we are within cooldown, remind them and increase remind count
-            action.act_again(reply_object, new_tracker, request, grace_period, stage, last_good)
+            if stage == ALL_ROOS:
+                # If we are within cooldown, remind them and increase remind count
+                action.act_again(reply_object, new_tracker, request, grace_period, stage, last_good)
         elif stage == ALL_ROOS:
             print("Roo issues have changed")
             # New situation, reset the request if it's there
