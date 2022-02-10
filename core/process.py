@@ -23,7 +23,7 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
     tracker.submission_processing = True
     roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name,
                               roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
-    # Create an issue tracker made from it's errors
+    # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
     # If it has issues, perform an action to correct it
@@ -243,6 +243,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             # Removed self submissions should be kept track of as well
             if submission.removed_by_category is not None or submission.banned_at_utc is not None \
                     or submission.selftext == "[deleted]":
+                tracker.submission_deleted = True
+            # 2022/02/10 - Check if this is one of the faulty deleted link posts
+            if submission.title == "[deleted by user]" and submission.selftext == "[removed]" and \
+                    submission.author is None:
                 tracker.submission_deleted = True
             return tracker
 
