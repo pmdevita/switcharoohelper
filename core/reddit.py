@@ -135,4 +135,7 @@ class ReplyObject:
 
     def get_comment(self):
         if self.is_submission() and self.roo:
-            return f"https://reddit.com{self.roo.comment.permalink}"
+            if self.roo.comment:
+                return f"https://reddit.com{self.roo.comment.permalink}"
+            else:
+                return "(There is no comment URL, if you see this something is wrong)"
