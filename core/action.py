@@ -1,5 +1,5 @@
 from random import randrange
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from core.issues import *
 from core.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
@@ -78,7 +78,7 @@ class BaseAction:
         else:
             print("Still waiting on cooldown")
 
-    def thank_you(self, roo, reply_object: ReplyObject = None):
+    def thank_you(self, roo, reply_object: ReplyObject = None, request=None):
         if not reply_object:
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
@@ -138,13 +138,19 @@ class PrintAction(BaseAction):
 
 
 class ModAction(BaseAction):
-    def thank_you(self, roo=None, reply_object: ReplyObject = None):
+    def thank_you(self, roo=None, reply_object: ReplyObject = None, request=None):
         if not reply_object:
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         time = reply_object.created
         if time > datetime(year=2021, month=6, day=1):
+            if request:
+                request_date = request.time.date()
+                request_time = request.time.time()
+                if request_date == date(2022, 2, 10) and request_time < time(4, 0):
+                    reply_object.reply("Apologies for the error!", ModActionStrings.thank_you20220210 + ModActionStrings.footer)
+                    return
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
     def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):
@@ -174,7 +180,6 @@ class ModAction(BaseAction):
                 # If we have multiple issues and the string set has a different issue set for that, use it
                 if len(issues) > 1 and strings.multi_issue_strings is not None:
                     issue_strings = strings.message_multi_issue_strings
-
 
         # Should the bot ask the mod team for further assistance?
         request_assistance = False

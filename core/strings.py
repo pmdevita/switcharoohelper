@@ -153,6 +153,14 @@ class ModActionStrings:
 
     thank_you = "Thank you for fixing your switcharoo!\n\n"
 
+    thank_you20220210 = "Hello again!\n\nIt appears that there was an error with the Reddit API last night that " \
+                        "caused switcharoohelper to send out several incorrect fix requests. This should now be " \
+                        "resolved and you can ignore the previous correction message. Thank you to those " \
+                        "that reported the issue and thank you all for your patience!\n\n" \
+                        "If you would like more information, you can find the discussion thread on the issue [here]" \
+                        "(https://www.reddit.com/r/switcharoo/comments/spa2yp/february_10th_switcharoohelper_" \
+                        "incident/).\n\n"
+
     footer = "---\nI am a bot. [Report an issue](https://www.reddit.com/message/" \
              "compose?to=%2Fu%2Fpmdevita&subject=Switcharoohelper%20Issue&message=)"
 
