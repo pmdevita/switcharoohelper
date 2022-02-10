@@ -86,6 +86,11 @@ class Switcharoo(db.Entity):
         except praw.exceptions.ClientException:
             print(f"Roo {self.id}")
 
+    def equals(self, other):
+        if isinstance(other, Switcharoo):
+            return self.id == other.id
+        return False
+
 
 class Issues(db.Entity):
     type = Required(str)
