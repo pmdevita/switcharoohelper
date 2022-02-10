@@ -126,7 +126,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         same_link = True
         if request:
             if request.linked_roo:
-                same_link = request.linked_roo == last_good
+                same_link = request.linked_roo.equals(last_good)
 
         # Has the issue set changed since last time
         if old_tracker == new_tracker and same_link:
@@ -154,7 +154,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
-            action.thank_you(reply_object=reply_object)
+            action.thank_you(reply_object=reply_object, request=request)
             increment_user_fixes(last_switcharoo, reply_object)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine
