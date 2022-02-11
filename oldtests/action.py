@@ -3,15 +3,15 @@ import os
 from tests.shims import praw
 from datetime import datetime, timedelta
 
-from core.credentials import CredentialsLoader
+from switcharoo.core import CredentialsLoader
 from pathlib import Path
 # Configure config first
 tests_folder = Path(os.path.dirname(os.path.realpath(__file__)))
 credentials = CredentialsLoader().get_credentials(tests_folder / "configs/action.ini")
 
-from core.reddit import ReplyObject
-from core.action import increment_user_fixes
-from core.history import SwitcharooLog
+from switcharoo.core.reddit import ReplyObject
+from switcharoo.core.action import increment_user_fixes
+from switcharoo.core.history import SwitcharooLog
 
 
 def reset_database(reddit, last_switcharoo: SwitcharooLog = None):
