@@ -1,5 +1,5 @@
 from random import randrange
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from core.issues import *
 from core.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
@@ -143,8 +143,9 @@ class ModAction(BaseAction):
             reply_object = ReplyObject.from_roo(roo)
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
-        time = reply_object.created
-        if time > datetime(year=2021, month=6, day=1):
+        post_creation = reply_object.created
+        # Thank yous were implemented after this date and have not been brought earlier yet
+        if post_creation > datetime(year=2021, month=6, day=1):
             if request:
                 request_date = request.time.date()
                 request_time = request.time.time()
