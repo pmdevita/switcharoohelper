@@ -1,12 +1,12 @@
 import praw
 import json
 import praw.models
-from core.history import SwitcharooLog
-from core.parse import REPatterns
-from core import constants as consts
-from core.action import modmail_action, inbox_action
-from core.process import reprocess
-from core.reddit import ReplyObject
+from switcharoo.core.history import SwitcharooLog
+from switcharoo.core.parse import REPatterns
+from switcharoo.config import constants as consts
+from switcharoo.core.action import modmail_action, inbox_action
+from switcharoo.core.process import reprocess
+from switcharoo.core.reddit import ReplyObject
 
 
 def get_context(message):

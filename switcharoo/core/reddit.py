@@ -1,7 +1,7 @@
 import praw.models
 import praw.exceptions
-from datetime import datetime, timedelta
-from core.credentials import CredentialsLoader
+from datetime import datetime
+from switcharoo.config.credentials import CredentialsLoader
 
 creds = CredentialsLoader.get_credentials()['general']
 username = CredentialsLoader.get_credentials()['reddit']['username']

@@ -2,7 +2,7 @@ import re
 import regex
 import praw.exceptions
 from datetime import datetime
-from core.pushshift import get_original_comment_from_psaw, get_comment_from_psaw
+from switcharoo.core.pushshift import get_original_comment_from_psaw, get_comment_from_psaw
 import urllib.parse
 import praw.models
 """

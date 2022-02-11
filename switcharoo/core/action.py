@@ -1,13 +1,12 @@
 from random import randrange
 from datetime import datetime, timedelta, date, time
-from core.issues import *
-from core.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
+from switcharoo.config.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
-from core.constants import ALL_ROOS
-from core.reddit import ReplyObject, UserDoesNotExist
-from core.credentials import CredentialsLoader
-from core.operator import message_private_sub
-from core.parse import REPatterns
+from switcharoo.config.constants import ALL_ROOS
+from switcharoo.core.reddit import ReplyObject, UserDoesNotExist
+from switcharoo.config.credentials import CredentialsLoader
+from switcharoo.core.operator import message_private_sub
+from switcharoo.core.parse import REPatterns
 
 creds = CredentialsLoader.get_credentials()['general']
 dry_run = creds['dry_run'].lower() != "false"
@@ -150,7 +149,8 @@ class ModAction(BaseAction):
                 request_date = request.time.date()
                 request_time = request.time.time()
                 if request_date == date(2022, 2, 10) and request_time < time(4, 0):
-                    reply_object.reply("Apologies for the error!", ModActionStrings.thank_you20220210 + ModActionStrings.footer)
+                    reply_object.reply("Apologies for the error!",
+                                       ModActionStrings.thank_you20220210 + ModActionStrings.footer)
                     return
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 

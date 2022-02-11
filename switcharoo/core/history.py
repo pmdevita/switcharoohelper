@@ -1,42 +1,37 @@
 from datetime import datetime, timedelta
-from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, set_sql_debug, \
-    TransactionIntegrityError, count, exists
-from core.credentials import CredentialsLoader
-from core.issues import issues_list, GetIssues
+from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, \
+    TransactionIntegrityError, count
+from switcharoo.config.issues import GetIssues
 import praw
 import praw.exceptions
-import prawcore.exceptions
-import random
-import string
-from core.issues import issues_list, IssueTracker
-from core.credentials import CredentialsLoader
+from switcharoo.config.issues import issues_list, IssueTracker
+from switcharoo.config.credentials import CredentialsLoader
 
-creds = CredentialsLoader.get_credentials()['general']
-DRY_RUN = creds['dry_run'].lower() != "false"
+# creds = CredentialsLoader.get_credentials()['general']
+# DRY_RUN = creds['dry_run'].lower() != "false"
 
 issues_obj = GetIssues.get()
 
 db = Database()
 
 
-def bind_db(db):
-    creds = CredentialsLoader.get_credentials()['database']
-
-    if creds['type'] == 'sqlite':
-        db_file = creds.get('db_file', "database.sqlite")
+def bind_db(db, type, host=None, username=None, password=None, database=None, port=None, ssl_ca=None, ssl_key=None, ssl_cert=None,
+            db_file="database.sqlite"):
+    if type == 'sqlite':
         db.bind(provider='sqlite', filename='../' + db_file, create_db=True)
-    elif creds['type'] == 'mysql':
+    elif type == 'mysql':
         # Check for SSL arguments
         ssl = {}
-        if creds.get('ssl-ca', None):
-            ssl['ssl'] = {'ca': creds['ssl-ca'], 'key': creds['ssl-key'], 'cert': creds['ssl-cert']}
-
-        db.bind(provider="mysql", host=creds['host'], user=creds['username'], password=creds['password'],
-                db=creds['database'], ssl=ssl, port=int(creds.get('port', 3306)))
+        if ssl_ca:
+            ssl['ssl'] = {'ca': ssl_ca, 'key': ssl_key, 'cert': ssl_cert}
+        if port is None:
+            port = 3306
+        db.bind(provider="mysql", host=host, user=username, password=password,
+                db=database, ssl=ssl, port=int(port))
     else:
         raise Exception("No database configuration")
 
-    return creds['type']
+    return type
 
 
 class Switcharoo(db.Entity):
@@ -156,11 +151,17 @@ class DeleteLater(db.Entity):
 
 
 class SwitcharooLog:
-    def __init__(self, reddit):
+    def __init__(self, reddit, db_args=None):
         self.reddit = reddit
         self.stats = SwitcharooStats(reddit)
         self.db = db
-        self.db_type = bind_db(db)
+        if db_args:
+            self.db_type = bind_db(db, **db_args)
+        else:
+            creds = CredentialsLoader.get_credentials()['database']
+            self.db_type = bind_db(db, creds["type"], creds["host"], creds["username"], creds["password"],
+                                   creds.get("database"), creds.get("port"), creds.get("ssl_ca"), creds.get("ssl_key"),
+                                   creds.get("ssl_cert"), creds.get("db_file"))
         self.db.generate_mapping(create_tables=True)
 
     def _link_reddit(self, roo):
@@ -215,8 +216,8 @@ class SwitcharooLog:
 
     def update(self, roo, submission_id=None, thread_id=None, comment_id=None, context=None, roo_issues=[],
                remove_issues=[], time=None, reset_issues=False, user=None, subreddit=None):
-        if DRY_RUN:
-            return roo
+        # if DRY_RUN:
+        #     return roo
         params = self._params_without_none(submission_id=submission_id, thread_id=thread_id, comment_id=comment_id,
                                            context=context, time=time, user=user, subreddit=subreddit)
 

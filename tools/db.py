@@ -1,8 +1,8 @@
-from core.credentials import CredentialsLoader
-from core.history import *
-from core import constants as consts
-from core.action import PrintAction, ModAction
-from core.process import reprocess, check_errors, add_comment
+from switcharoo.core import CredentialsLoader
+from switcharoo.config import constants as consts
+from switcharoo.core.action import PrintAction, ModAction
+from switcharoo.core import check_errors
+
 credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],

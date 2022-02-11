@@ -1,11 +1,12 @@
 import praw
 
 
-from core.credentials import get_credentials, CredentialsLoader
+from switcharoo.core import CredentialsLoader
+from switcharoo.config import constants as consts
+
 credentials = CredentialsLoader.get_credentials("../credentials.ini")['reddit']
 
-from core.history import SwitcharooLog
-from core import constants as consts
+from switcharoo.core.history import SwitcharooLog
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],

@@ -1,16 +1,13 @@
-from pprint import pprint
 import praw.exceptions
 import prawcore.exceptions
 from datetime import datetime, timedelta
-from core import parse
-from core.issues import IssueTracker
-from core.strings import NewIssueDeleteStrings
-from core.reddit import ReplyObject
-from core.constants import ONLY_BAD, ONLY_IGNORED, ALL_ROOS
-from core.history import SwitcharooLog, Switcharoo
-from core.credentials import CredentialsLoader
-from core.action import decide_subreddit_privated, increment_user_fixes
-import core.operator
+from switcharoo.core import parse
+from switcharoo.config.issues import IssueTracker
+from switcharoo.core.reddit import ReplyObject
+from switcharoo.config.constants import ONLY_BAD, ALL_ROOS
+from switcharoo.core.history import SwitcharooLog, Switcharoo
+from switcharoo.config.credentials import CredentialsLoader
+from switcharoo.core.action import decide_subreddit_privated, increment_user_fixes
 
 creds = CredentialsLoader.get_credentials()['general']
 DRY_RUN = creds['dry_run'].lower() != "false"

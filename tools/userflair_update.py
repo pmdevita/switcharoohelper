@@ -7,13 +7,14 @@ root = str(tools_folder.parent)
 if root not in sys.path:
     sys.path.append(root)
 
-from core.credentials import CredentialsLoader
+from switcharoo.core import CredentialsLoader
+from switcharoo.config import constants as consts
+
 credentials = CredentialsLoader.get_credentials(tools_folder / "../credentials.ini")['reddit']
 
 import praw
 import prawcore.exceptions
-from core.history import SwitcharooLog
-from core import constants as consts
+from switcharoo.core.history import SwitcharooLog
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],

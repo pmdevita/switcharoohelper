@@ -1,5 +1,5 @@
 import json
-from core.constants import CONTEXT_HEADER
+from switcharoo.config.constants import CONTEXT_HEADER
 
 
 def format_context(context):
