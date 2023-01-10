@@ -22,14 +22,8 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Action Tests
+        python -m pip install --upgrade pip poetry
+        poetry install
+    - name: Run test
       run: |
-        python -m unittest -v tests.action
-    - name: Parse Tests
-      run: |
-        python -m unittest -v tests.parse
-    - name: Process Tests
-      run: |
-        python -m unittest -v tests.process
+        poetry run pytest

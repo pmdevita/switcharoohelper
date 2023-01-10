@@ -12,20 +12,15 @@ Provides different methods to parse Reddit data
 
 class REPatterns:
     # returns the URL from a Reddit embedded hyperlink
-    old_link = re.compile("\[.*?\] *\n? *\((.*?)\)")
-    link = re.compile("\[(.*?)\] *\n? *\(\s*(.*?)\s*\)")
-    reddit_thread = re.compile("^http(?:s)?://(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})")
-    # Newer regex parsers
-    REDDIT_PATTERN = "(?V1)(?i)http(?:s)?://(?:www\.)?(?:[\w-]+?\.)?reddit.com(?-i)(/r/|/user/)?(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
-    SHORT_REDDIT_PATTERN = "(/r/|/user/)(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,6})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{7}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
+    link = re.compile(r"\[(.*?)\] *\n? *\(\s*(.*?)\s*\)")
+    REDDIT_PATTERN = r"(?V1)(?i)http(?:s)?://(?:www\.)?(?:[\w-]+?\.)?reddit.com(?-i)(/r/|/user/)?(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,9})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{3,9}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
+    SHORT_REDDIT_PATTERN = r"(/r/|/user/)(?(1)([\w:\.]{2,21}))(/comments/)?(?(3)(\w{5,9})(?:/[\w%\\\\-]+)?)?(?(4)/(\w{3,9}))?/?(\?)?(?(6)(\S+))?(\#)?(?(8)(\S+))?"
     reddit_strict_parse = regex.compile("^{}$".format(REDDIT_PATTERN))
     reddit_detect = regex.compile(REDDIT_PATTERN)
     short_reddit_strict_parse = re.compile("^{}$".format(SHORT_REDDIT_PATTERN))
     short_reddit_detect = re.compile(SHORT_REDDIT_PATTERN)
 
-    private_subreddit_response = re.compile("(allow|deny)(?: for (\d+) ((?:hour|day|week|month|year))s?)?", re.I)
-
-    # wrongly_meta = re.compile("\A(?:https|http)?:\/\/(?:\w+?\.)?reddit.com\/r\/.*?\/comments\/(?P<thread_id>\w{6})\/.*?\/(?P<comment_id>\w{7})(?P<paramters>[\w?\/=]*?)\Z")
+    private_subreddit_response = re.compile(r"(allow|deny)(?: for (\d+) ((?:hour|day|week|month|year))s?)?", re.I)
 
 
 class RedditURL:

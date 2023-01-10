@@ -33,7 +33,8 @@ jobs:
             cd ~/switcharoo
             git pull origin master
             cp ~/switcharoo/config/services/* ~/.config/systemd/user
-            ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
+            python3 -m poetry install
+            python3 -m poetry shell
             echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
             crontab ~/switcharoo/config/cron.jobs
             systemctl --user daemon-reload

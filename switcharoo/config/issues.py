@@ -167,6 +167,10 @@ class IssueTracker:
         added, removed = self.diff(other)
         return len(added) == 0 and len(removed) == 0
 
+    def __repr__(self):
+        issue_string = " ".join([i.name for i in self.issues if i.has_issue])
+        return f"IssueTracker({issue_string})"
+
 
 class IssueTrackerIter:
     def __init__(self, issues):

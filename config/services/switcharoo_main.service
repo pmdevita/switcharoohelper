@@ -4,7 +4,7 @@ Description=Main Switcharoohelper service
 
 [Service]
 WorkingDirectory=%h/switcharoo
-ExecStart=%h/venv/bin/python %h/switcharoo/main.py
+ExecStart=python3 -m poetry run switcharoohelper
 StandardOutput=file:/var/log/switcharoo/main.log
 StandardError=file:/var/log/switcharoo/main.log
 
