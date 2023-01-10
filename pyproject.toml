@@ -14,9 +14,7 @@ regex = "^2022.1.18"
 PyMySQL = "^1.0.2"
 psaw = "^0.1.0"
 requests = "^2.27.1"
-vcrpy = "^4.1.1"
 pytest = "^7.0.0"
-pytest-vcr = "^1.0.2"
 pytest-mock = "^3.10.0"
 
 [tool.poetry.dev-dependencies]
