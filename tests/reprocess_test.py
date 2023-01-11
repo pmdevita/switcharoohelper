@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import switcharoo.core.process
 from switcharoo.config.issues import IssueTracker
 from switcharoo.config import constants as consts
 
@@ -12,6 +11,7 @@ class TestReprocess:
     # switcharoohelper thought it was still a good post and tried to look up new
     # roos based on its ID. This caused the 6 month outage of 2022.
     def test_meta_deleted_later(self, reddit, last_switcharoo, action, first_roo):
+        import switcharoo.core.process
         second = reddit.submission("zbcdf", link_post=False, content=None,
                                    date=datetime(2022, 8, 1, 1), author="otheruser",
                                    subreddit="subreddit2")

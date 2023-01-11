@@ -2,18 +2,20 @@ from datetime import datetime
 
 import pytest
 
-import switcharoo.core
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.core.history import SwitcharooLog
 from tests.mock import praw
 
 
 @pytest.fixture(scope="function")
-def reddit(mocker):
+def reddit(mocker, mock_creds):
     # Monkeypatch in the mock praw library
     import switcharoo.core.process
+    import switcharoo.core.parse
+    import switcharoo.core.reddit
     mocker.patch.object(switcharoo.core.process, "praw", praw)
     mocker.patch.object(switcharoo.core.parse, "praw", praw)
+    mocker.patch.object(switcharoo.core.reddit, "praw", praw)
 
     reddit = praw.Reddit(username="switcharoohelper")
     return reddit
