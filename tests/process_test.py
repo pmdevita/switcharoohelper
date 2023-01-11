@@ -230,3 +230,22 @@ class TestProcess:
         model_issues = IssueTracker()
         model_issues.comment_linked_bad_roo = True
         assert issues == model_issues
+
+    def test_comment_blocked_user(self, reddit, last_switcharoo, action, process, first_roo):
+        import switcharoo.core.process
+        second = reddit.submission("zbcdf", link_post=False, body=None,
+                                   date=datetime(2022, 2, 1, 1), author="otheruser",
+                                   subreddit="subreddit2")
+        second_comment = reddit.comment("12346", second,
+                                        f"Ah the old reddit [switcharoo]"
+                                        f"({first_roo.get_link_and_context(3)})",
+                                        "user1",
+                                        date=datetime(2022, 2, 1, 2), blocked=True)
+        second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
+                                              body=second_comment.get_link_and_context(3),
+                                              subreddit="switcharoo")
+        switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
+        issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
+        model_issues = IssueTracker()
+        model_issues.user_blocked = True
+        assert issues == model_issues

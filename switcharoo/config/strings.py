@@ -23,6 +23,7 @@ class IssueStrings:
     user_noncompliance = ""
     user_mismatch = ""
     subreddit_privated = ""
+    user_blocked = ""
 
     def __str__(self):
         return self.__class__.__name__
@@ -82,6 +83,9 @@ class ModIssueStrings(IssueStrings):
     subreddit_privated = "the subreddit this roo is from is privated so most users will be unable to continue down " \
                          "the roo chain through this one. If it has only temporarily been privated, try submitting " \
                          "again after it has unprivated."
+    user_blocked = "you have blocked the switcharoohelper bot. This means any time the bot needs your help to make a" \
+                   " change to the switcharoo chain, you won't be able to see its messages. Please unblock the bot " \
+                   "and message the mods to have your roos reinstated."
 
 
 class WarnIssues(ModIssueStrings):

@@ -332,6 +332,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         if init_db:
             roo = last_switcharoo.update(roo, comment_id=comment.id)
 
+    if not comment:
+        comment = roo.comment
+
     # If comment was deleted, this will make an error. The try alleviates that
     try:
         comment.refresh()
@@ -360,6 +363,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
     # Deleted comments sometimes don't generate errors
     if comment.body == "[removed]" or comment.body == "[deleted]":
         tracker.comment_deleted = True
+        return tracker
+
+    if comment.body == "[unavailable]" and comment.unrepliable_reason == "NEAR_BLOCKER":
+        tracker.user_blocked = True
         return tracker
 
     # Good date info to have on hand in the upcoming checks

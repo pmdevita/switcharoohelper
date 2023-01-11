@@ -9,7 +9,7 @@ from tests.mock.praw.exceptions import ClientException, Forbidden
 
 
 class MockComment:
-    def __init__(self, comment_id, submission: MockSubmission, body, author, date, private=False):
+    def __init__(self, comment_id, submission: MockSubmission, body, author, date, private=False, blocked=False):
         self.id = comment_id
         self.thread_id = submission.id
         self.body = body
@@ -17,6 +17,10 @@ class MockComment:
         self.author = MockRedditor(author)
         self.private = private
         self.permalink = f"/r/{submission.subreddit}/comments/{submission.id}/_/{self.id}/"
+        self.unrepliable_reason = None
+        if blocked:
+            self.body = "[unavailable]"
+            self.unrepliable_reason = "NEAR_BLOCKER"
 
     def refresh(self):
         if super(MockComment, self).__getattribute__("private"):
