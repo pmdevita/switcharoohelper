@@ -7,7 +7,7 @@ from switcharoo.config import constants as consts
 class TestProcess:
     def test_normal(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2020, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit1")
         second_comment = reddit.comment("12345", second,
@@ -16,7 +16,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2020, 2, 1, 2))
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2020, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
 
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
@@ -26,7 +26,7 @@ class TestProcess:
 
     def test_pre2020_user_mismatch(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2020, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit1")
         second_comment = reddit.comment("12345", second,
@@ -35,7 +35,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2020, 2, 1, 2))
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2020, 2, 1, 3), author="wrongUuser",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
 
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
@@ -45,7 +45,7 @@ class TestProcess:
 
     def test_user_mismatch(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit1")
         second_comment = reddit.comment("12345", second,
@@ -54,7 +54,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 2, 1, 2))
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2022, 2, 1, 3), author="wrongUuser",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
 
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
@@ -65,7 +65,7 @@ class TestProcess:
 
     def test_sub_privated(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12345", second,
@@ -76,7 +76,7 @@ class TestProcess:
         second.private = True
         second_comment.private = True
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
 
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
@@ -90,7 +90,7 @@ class TestProcess:
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=True, update_requested=False)
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12345", second,
@@ -99,7 +99,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 2, 1, 2))
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
         # Now, the roo has been privated in the meantime, update the issues
@@ -116,7 +116,7 @@ class TestProcess:
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=False, update_requested=False)
-        second = reddit.submission("abcde", link_post=False, body=None,
+        second = reddit.submission("abcde", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12345", second,
@@ -125,7 +125,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 2, 1, 2))
         second_submission = reddit.submission("abcdf", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
         # Now, the roo has been privated in the meantime, update the issues
@@ -143,7 +143,7 @@ class TestProcess:
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=False, update_requested=False)
-        bad = reddit.submission("abcde", link_post=False, body=None,
+        bad = reddit.submission("abcde", link_post=False, content=None,
                                 date=datetime(2022, 2, 1, 1), author="otheruser",
                                 subreddit="subreddit2")
         bad_comment = reddit.comment("12345", bad,
@@ -151,10 +151,10 @@ class TestProcess:
                                      "user1",
                                      date=datetime(2022, 2, 1, 2))
         bad_submission = reddit.submission("abcdf", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                           body=bad_comment.get_link_and_context(3),
+                                           content=bad_comment.get_link_and_context(3),
                                            subreddit="switcharoo")
         switcharoo.core.process.process(reddit, bad_submission, last_switcharoo, action)
-        second = reddit.submission("zbcdf", link_post=False, body=None,
+        second = reddit.submission("zbcdf", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12346", second,
@@ -163,7 +163,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 2, 1, 2))
         second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
         issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
@@ -173,7 +173,7 @@ class TestProcess:
 
     def test_comment_blocked_user(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("zbcdf", link_post=False, body=None,
+        second = reddit.submission("zbcdf", link_post=False, content=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12346", second,
@@ -182,7 +182,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 2, 1, 2), blocked=True)
         second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 2, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
         issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
@@ -201,7 +201,7 @@ class TestProcess:
                                         "user1",
                                         date=datetime(2022, 8, 1, 2))
         second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 8, 1, 3), author="user1",
-                                              body=second_comment.get_link_and_context(3),
+                                              content=second_comment.get_link_and_context(3),
                                               subreddit="switcharoo")
         switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
         issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
