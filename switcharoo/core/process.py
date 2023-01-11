@@ -18,7 +18,7 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
     # Add with submission processing issue to prevent rescans from interfering during add
     tracker = IssueTracker()
     tracker.submission_processing = True
-    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name,
+    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name if submission.author else "",
                               roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
     # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
@@ -291,7 +291,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # Verify it contains context param
         if "context" not in submission_url.params:
-            tracker.submission_lacks_context = True
+            # Forgive roos from the 2022 6 month outage
+            submission_date = datetime.utcfromtimestamp(submission.created_utc)
+            if not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
+                tracker.submission_lacks_context = True
             return tracker
 
         # Try to get the context value

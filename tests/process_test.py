@@ -58,7 +58,7 @@ def first_roo(reddit, process, last_switcharoo, action):
                                    "user1",
                                    date=datetime(2020, 1, 1, 2))
     first_submission = reddit.submission("firstr", link_post=True, date=datetime(2020, 1, 1, 3), author="user1",
-                                         body=f"https://reddit.com{first_comment.permalink}?context=3",
+                                         body=first_comment.get_link_and_context(3),
                                          subreddit="switcharoo")
     switcharoo.core.process.process(reddit, first_submission, last_switcharoo, action)
     return first_comment
@@ -249,3 +249,6 @@ class TestProcess:
         model_issues = IssueTracker()
         model_issues.user_blocked = True
         assert issues == model_issues
+
+    # Todo: Write a test that generates a meta post that is not detected by the bot
+    # We then remove it, double check that the database thinks it was removed

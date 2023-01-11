@@ -6,7 +6,7 @@ from switcharoo.config.constants import ALL_ROOS
 from switcharoo.core.reddit import ReplyObject, UserDoesNotExist
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.core.operator import message_private_sub
-from switcharoo.core.parse import REPatterns
+from switcharoo.core.parse import REPatterns, RedditURL
 
 creds = CredentialsLoader.get_credentials()['general']
 dry_run = creds['dry_run'].lower() != "false"
@@ -188,15 +188,16 @@ class ModAction(BaseAction):
         last_good_url = None
         context = "0"
         # If we do have context, format the link ourselves with it
-        # Todo: replace with RedditURL implementation
         if last_good_submission.context is not None:
             context = str(last_good_submission.context)
             if last_good_submission.context > 0:
-                last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}" \
-                                f"?context={last_good_submission.context} "
+                submission_url = RedditURL(last_good_submission.comment)
+                submission_url.params["context"] = last_good_submission.context
+                last_good_url = submission_url.to_link(self.reddit)
         if not last_good_url:
             if last_good_submission.submission:
-                last_good_url = last_good_submission.submission.url
+                submission_url = RedditURL(last_good_submission.submission.url)
+                last_good_url = submission_url.to_link(self.reddit)
             else:
                 last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
 
