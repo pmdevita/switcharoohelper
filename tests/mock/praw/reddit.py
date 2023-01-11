@@ -8,7 +8,7 @@ class MockReddit:
         self._submissions = {}
         self._comments = {}
 
-    def submission(self, submission_id, *args, **kwargs) -> MockSubmission:
+    def submission(self, submission_id: str, *args, **kwargs) -> MockSubmission:
         if submission_id not in self._submissions:
             submission = MockSubmission(submission_id, *args, **kwargs)
             self._submissions[submission_id] = submission

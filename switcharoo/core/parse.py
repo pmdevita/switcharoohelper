@@ -31,12 +31,15 @@ class RedditURL:
         a._regex_to_props()
         return a
 
-    def __init__(self, url):
+    def __init__(self, url: str | praw.models.Comment | praw.models.Submission):
         self.is_reddit_url = False
         self.subreddit = None
         self.thread_id = None
         self.comment_id = None
         self.params = {}
+
+        if isinstance(url, praw.models.Submission) or isinstance(url, praw.models.Comment):
+            url = url.permalink
 
         self._regex = REPatterns.reddit_strict_parse.findall(url)
         if not self._regex:
@@ -62,7 +65,7 @@ class RedditURL:
         return self.thread_id == other.thread_id and self.comment_id == other.comment_id
 
     def to_link(self, reddit):
-        url = "https://reddit.com"
+        url = "https://www.reddit.com"
         try:
             if self.comment_id:
                 comment = reddit.comment(self.comment_id)
@@ -73,8 +76,7 @@ class RedditURL:
         except praw.exceptions.ClientException:
             return None
         if self.params:
-            url += "?"
-            url += "&".join([f"{i}={self.params[i]}" for i in self.params])
+            url += "?" + "&".join([f"{i}={self.params[i]}" for i in self.params])
         return url
 
 

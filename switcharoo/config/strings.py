@@ -136,6 +136,7 @@ class MultiNewIssueMessageIssues(NewIssueMessageIssues):
     pass
 
 
+# Strings regarding the main structure of a response the bot may make
 class ModActionStrings:
     issue_strings = ModIssueStrings
     multi_issue_strings = None
@@ -172,12 +173,14 @@ class ModActionStrings:
                  "or ask the mods a question. You can also visit us at r/switcharoo for more information."
 
 
+# Strings used when a roo is not marked as a bad issue and will simply be warned
 class WarnStrings(ModActionStrings):
     issue_strings = WarnIssues
     single_reason = "There's just one thing I need fixed with your roo. {}\n\nThank you!\n\n"
     multiple_reason = "There are a few things that need to be fixed with your roo:\n\n{}\n\n"
 
 
+# Strings used when a roo is marked with a bad issue and will be removed
 class DeleteStrings(ModActionStrings):
     subject = "Notice about your switcharoo"
     single_reason = "Unfortunately, your submission was removed because {}\n\n"

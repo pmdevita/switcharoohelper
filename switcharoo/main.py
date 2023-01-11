@@ -12,9 +12,11 @@ from .config import constants as consts
 from .core.action import ModAction
 from .core.inbox import process_message, process_modmail
 
+
 def get_newest_id(subreddit, index=0):
     """Retrieves the newest post's id. Used for starting the last switcharoo history trackers"""
     return [i for i in subreddit.new(params={"limit": "1"})][index].id
+
 
 reddit_creds = CredentialsLoader.get_credentials()['reddit']
 credentials = CredentialsLoader.get_credentials()['general']
