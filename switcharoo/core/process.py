@@ -295,14 +295,19 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             submission_date = datetime.utcfromtimestamp(submission.created_utc)
             if not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
                 tracker.submission_lacks_context = True
-            return tracker
+                return tracker
 
         # Try to get the context value
         try:
             context = int(submission_url.params['context'])
         except (KeyError, ValueError):  # context is not in URL params or not a number
-            tracker.submission_lacks_context = True
-            return tracker
+            # Forgive roos from the 2022 6 month outage
+            submission_date = datetime.utcfromtimestamp(submission.created_utc)
+            if not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
+                tracker.submission_lacks_context = True
+                return tracker
+            else:
+                context = 1000
 
         # If we are in the middle of adding this to the db, add the context amount
         if init_db:

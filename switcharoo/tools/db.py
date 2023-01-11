@@ -3,7 +3,7 @@ import praw
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.config import constants as consts
 from switcharoo.core.action import PrintAction, ModAction
-from switcharoo.core.process import check_errors
+from switcharoo.core.process import check_errors, process, reprocess
 from switcharoo.core.history import SwitcharooLog
 
 credentials = CredentialsLoader.get_credentials()['reddit']

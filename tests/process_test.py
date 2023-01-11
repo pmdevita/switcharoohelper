@@ -251,5 +251,24 @@ class TestProcess:
         model_issues.user_blocked = True
         assert issues == model_issues
 
+    def test_6month_other_error(self, reddit, last_switcharoo, action, process, first_roo):
+        import switcharoo.core.process
+        second = reddit.submission("zbcdf", link_post=False, body=None,
+                                   date=datetime(2022, 8, 1, 1), author="otheruser",
+                                   subreddit="subreddit2")
+        second_comment = reddit.comment("12346", second,
+                                        f"Ah the old reddit [switcharoo]"
+                                        f"({first_roo.get_link_and_context(None)})",
+                                        "user1",
+                                        date=datetime(2022, 8, 1, 2))
+        second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 8, 1, 3), author="user1",
+                                              body=second_comment.get_link_and_context(3),
+                                              subreddit="switcharoo")
+        switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
+        issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
+        model_issues = IssueTracker()
+        model_issues.comment_lacks_context = True
+        assert issues == model_issues
+
     # Todo: Write a test that generates a meta post that is not detected by the bot
     # We then remove it, double check that the database thinks it was removed
