@@ -18,7 +18,7 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
     # Add with submission processing issue to prevent rescans from interfering during add
     tracker = IssueTracker()
     tracker.submission_processing = True
-    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name,
+    roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name if submission.author else "",
                               roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
     # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
@@ -226,6 +226,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
     """
     tracker = IssueTracker()
 
+    if submission is None:
+        submission = roo.submission
+
     if submission:
         # Ignore announcements
         if submission.distinguished:
@@ -233,15 +236,15 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # Verify it is a link post (not a self post)
         if submission.is_self:
+            # Removed self submissions should be kept track of as well
+            if submission.removed_by_category is not None or submission.banned_at_utc is not None \
+                    or submission.selftext == "[deleted]":
+                tracker.submission_deleted = True
             # If meta, determine if it was incorrectly submitted as meta
             if not parse.is_meta_title(submission.title):
                 if parse.only_reddit_url(submission.title, submission.selftext):
                     tracker.submission_is_meta = True
                     return tracker
-            # Removed self submissions should be kept track of as well
-            if submission.removed_by_category is not None or submission.banned_at_utc is not None \
-                    or submission.selftext == "[deleted]":
-                tracker.submission_deleted = True
             # 2022/02/10 - Check if this is one of the faulty deleted link posts
             if submission.title == "[deleted by user]" and submission.selftext == "[removed]" and \
                     submission.author is None:
@@ -288,15 +291,23 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # Verify it contains context param
         if "context" not in submission_url.params:
-            tracker.submission_lacks_context = True
-            return tracker
+            # Forgive roos from the 2022 6 month outage
+            submission_date = datetime.utcfromtimestamp(submission.created_utc)
+            if not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
+                tracker.submission_lacks_context = True
+                return tracker
 
         # Try to get the context value
         try:
             context = int(submission_url.params['context'])
         except (KeyError, ValueError):  # context is not in URL params or not a number
-            tracker.submission_lacks_context = True
-            return tracker
+            # Forgive roos from the 2022 6 month outage
+            submission_date = datetime.utcfromtimestamp(submission.created_utc)
+            if not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
+                tracker.submission_lacks_context = True
+                return tracker
+            else:
+                context = 1000
 
         # If we are in the middle of adding this to the db, add the context amount
         if init_db:
@@ -332,6 +343,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         if init_db:
             roo = last_switcharoo.update(roo, comment_id=comment.id)
 
+    if not comment:
+        comment = roo.comment
+
     # If comment was deleted, this will make an error. The try alleviates that
     try:
         comment.refresh()
@@ -360,6 +374,10 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
     # Deleted comments sometimes don't generate errors
     if comment.body == "[removed]" or comment.body == "[deleted]":
         tracker.comment_deleted = True
+        return tracker
+
+    if comment.body == "[unavailable]" and comment.unrepliable_reason == "NEAR_BLOCKER":
+        tracker.user_blocked = True
         return tracker
 
     # Good date info to have on hand in the upcoming checks
@@ -403,7 +421,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
             # Verify it contains context param
             if "context" not in comment_url.params:
-                if datetime(year=2021, month=3, day=10) < created:
+                # before we started enforcing context and during the 6th month outage
+                submission_date = datetime.utcfromtimestamp(submission.created_utc)
+                if datetime(year=2021, month=3, day=10) < created and not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
                     tracker.comment_lacks_context = True
                 # else:
                 #     print("Ignoring bad context cause it's old")
@@ -413,7 +433,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 context = int(comment_url.params['context'])
             except (KeyError, ValueError):  # context is not a number
                 thing = submission if submission else comment
-                if datetime(year=2021, month=3, day=10) < created:
+                # before we started enforcing context and during the 6th month outage
+                submission_date = datetime.utcfromtimestamp(submission.created_utc)
+                if datetime(year=2021, month=3, day=10) < created and not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
                     tracker.comment_lacks_context = True  # Should be a different error
                 # else:
                 #     print("Ignoring bad context cause it's old")

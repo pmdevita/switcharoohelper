@@ -21,7 +21,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: SSH Remote Commands
-        uses: appleboy/ssh-action@v0.1.4
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -33,7 +33,7 @@ jobs:
             cd ~/switcharoo
             git pull origin master
             cp ~/switcharoo/config/services/* ~/.config/systemd/user
-            ~/venv/bin/pip install -r ~/switcharoo/requirements.txt
+            python3 -m poetry install --sync
             echo "${{ secrets.CONFIG }}" > ~/switcharoo/credentials.ini
             crontab ~/switcharoo/config/cron.jobs
             systemctl --user daemon-reload

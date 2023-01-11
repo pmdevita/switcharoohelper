@@ -2,58 +2,61 @@
 
 issues_list = [
     # The submission link does not have a ?context suffix
-    {"type": "submission_lacks_context", "bad": True},
+    {"type": "submission_lacks_context", "bad": True, "resubmit": True},
 
     # The submission linked a thread, not a comment
-    {"type": "submission_linked_thread", "bad": True},
+    {"type": "submission_linked_thread", "bad": True, "resubmit": True},
 
     # The submission links to a deleted comment
-    {"type": "comment_deleted", "bad": True},
+    {"type": "comment_deleted", "bad": True, "resubmit": False},
 
     # The submission links to a comment with no link
-    {"type": "comment_has_no_link", "bad": True},
+    {"type": "comment_has_no_link", "bad": True, "resubmit": True},
 
     # The switcharoo comment is linked to the wrong thing
-    {"type": "comment_linked_wrong", "bad": False},
+    {"type": "comment_linked_wrong", "bad": False, "resubmit": False},
 
     # The switcharoo comment link does not have the ?context suffix
-    {"type": "comment_lacks_context", "bad": False},
+    {"type": "comment_lacks_context", "bad": False, "resubmit": False},
 
     # The switcharoo was correctly linked to a bad roo. Ask for edit to new one
-    {"type": "comment_linked_bad_roo", "bad": False},
+    {"type": "comment_linked_bad_roo", "bad": False, "resubmit": False},
 
     # The switcharoo tried to have multiple sections of url params (multiple '?')
-    {"type": "submission_multiple_params", "bad": True},
+    {"type": "submission_multiple_params", "bad": True, "resubmit": False},
 
     # The switcharoo had a slash at the end of the params
-    {"type": "submission_link_final_slash", "bad": True},
+    {"type": "submission_link_final_slash", "bad": True, "resubmit": False},
 
     # The submission links outside of reddit
-    {"type": "submission_not_reddit", "bad": True},
+    {"type": "submission_not_reddit", "bad": True, "resubmit": False},
 
     # The submission is a meta post when it should have been a link
-    {"type": "submission_is_meta", "bad": True},
+    {"type": "submission_is_meta", "bad": True, "resubmit": False},
 
     # The submission has linked the post on r/switcharoo, not the link
-    {"type": "submission_linked_post", "bad": True},
+    {"type": "submission_linked_post", "bad": True, "resubmit": True},
 
     # The r/switcharoo submission has been deleted
-    {"type": "submission_deleted", "bad": True},
+    {"type": "submission_deleted", "bad": True, "resubmit": True},
 
     # The submission has not been fully processed yet
-    {"type": "submission_processing", "bad": False},
+    {"type": "submission_processing", "bad": False, "resubmit": True},
 
     # The submission's URL is malformed in some unknown way
-    {"type": "submission_bad_url", "bad": True},
+    {"type": "submission_bad_url", "bad": True, "resubmit": True},
 
     # The user ignored the bot and did not fix the roo
-    {"type": "user_noncompliance", "bad": True},
+    {"type": "user_noncompliance", "bad": True, "resubmit": False},
 
     # The user who submitted this roo is not the user who wrote the comment
-    {"type": "user_mismatch", "bad": True},
+    {"type": "user_mismatch", "bad": True, "resubmit": False},
 
     # This subreddit is privated
-    {"type": "subreddit_privated", "bad": True}
+    {"type": "subreddit_privated", "bad": True, "resubmit": False},
+
+    # The user blocked the bot
+    {"type": "user_blocked", "bad": True, "resubmit": False},
 ]
 
 
@@ -87,11 +90,12 @@ class GetIssues:
 
 
 class Issue:
-    def __init__(self, id, name, bad):
+    def __init__(self, id, name, bad, resubmit: bool):
         self.id = id
         self.name = name
         self.bad = bad
         self.has_issue = False  # Is there a better name for this?
+        self.resubmit = resubmit
 
     def __get__(self, obj, obj_type=None):
         return obj.has_issue
@@ -109,7 +113,7 @@ class IssueTracker:
         self.issue_dict = {}
         self.issues = []
         for index, i in enumerate(issues_list):
-            issue = Issue(index, i['type'], i['bad'])
+            issue = Issue(index, i['type'], i['bad'], i['resubmit'])
             self.issue_dict[i['type']] = issue
             self.issues.append(issue)
         self._setup = False
@@ -166,6 +170,10 @@ class IssueTracker:
     def __eq__(self, other: "IssueTracker"):
         added, removed = self.diff(other)
         return len(added) == 0 and len(removed) == 0
+
+    def __repr__(self):
+        issue_string = " ".join([i.name for i in self.issues if i.has_issue])
+        return f"IssueTracker({issue_string})"
 
 
 class IssueTrackerIter:

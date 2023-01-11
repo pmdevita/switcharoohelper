@@ -6,7 +6,7 @@ authors = ["Peter DeVita <mewtwo2643@yahoo.com>"]
 license = "AGPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8,<3.11"
 praw = "^7.5.0"
 prawcore = "^2.3.0"
 pony = "^0.7.16"
@@ -14,9 +14,8 @@ regex = "^2022.1.18"
 PyMySQL = "^1.0.2"
 psaw = "^0.1.0"
 requests = "^2.27.1"
-vcrpy = "^4.1.1"
 pytest = "^7.0.0"
-pytest-vcr = "^1.0.2"
+pytest-mock = "^3.10.0"
 
 [tool.poetry.dev-dependencies]
 
@@ -27,4 +26,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 switcharoohelper = 'switcharoo.main:main'
 switcharoohelper-checkup = 'switcharoo.check_up:check_up'
-
+switcharoohelper-flairs = 'switcharoo.tools.userflair_update:main'

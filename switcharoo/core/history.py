@@ -18,7 +18,7 @@ db = Database()
 def bind_db(db, type, host=None, username=None, password=None, database=None, port=None, ssl_ca=None, ssl_key=None, ssl_cert=None,
             db_file="database.sqlite"):
     if type == 'sqlite':
-        db.bind(provider='sqlite', filename='../' + db_file, create_db=True)
+        db.bind(provider='sqlite', filename='../' + db_file if not db_file.startswith(":") else db_file, create_db=True)
     elif type == 'mysql':
         # Check for SSL arguments
         ssl = {}
@@ -356,7 +356,7 @@ class SwitcharooLog:
             self._link_reddit(roo)
         return roos
 
-    def get_issues(self, roo):
+    def get_issues(self, roo) -> IssueTracker:
         tracker = IssueTracker()
         with db_session:
             roo = Switcharoo[roo.id]
