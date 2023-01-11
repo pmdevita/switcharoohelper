@@ -1,4 +1,6 @@
 import re
+import typing
+
 import regex
 import praw.exceptions
 from datetime import datetime
@@ -31,7 +33,7 @@ class RedditURL:
         a._regex_to_props()
         return a
 
-    def __init__(self, url: str | praw.models.Comment | praw.models.Submission):
+    def __init__(self, url: typing.Union[str, praw.models.Comment, praw.models.Submission]):
         self.is_reddit_url = False
         self.subreddit = None
         self.thread_id = None
