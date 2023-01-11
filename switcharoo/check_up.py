@@ -5,12 +5,12 @@ import time
 import traceback
 import prawcore.exceptions
 
-from .config.credentials import CredentialsLoader
-from .core.process import reprocess, double_check_link
-from .core.history import SwitcharooLog
-from .config import constants as consts
-from .core.action import ModAction
-from .config.arguments import check_up as parser
+from switcharoo.config.credentials import CredentialsLoader
+from switcharoo.core.process import reprocess, double_check_link
+from switcharoo.core.history import SwitcharooLog
+from switcharoo.config import constants as consts
+from switcharoo.core.action import ModAction
+from switcharoo.config.arguments import check_up as parser
 
 credentials = CredentialsLoader.get_credentials()['reddit']
 

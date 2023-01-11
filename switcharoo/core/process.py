@@ -421,7 +421,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
             # Verify it contains context param
             if "context" not in comment_url.params:
-                if datetime(year=2021, month=3, day=10) < created:
+                # before we started enforcing context and during the 6th month outage
+                submission_date = datetime.utcfromtimestamp(submission.created_utc)
+                if datetime(year=2021, month=3, day=10) < created and not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
                     tracker.comment_lacks_context = True
                 # else:
                 #     print("Ignoring bad context cause it's old")
@@ -431,7 +433,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                 context = int(comment_url.params['context'])
             except (KeyError, ValueError):  # context is not a number
                 thing = submission if submission else comment
-                if datetime(year=2021, month=3, day=10) < created:
+                # before we started enforcing context and during the 6th month outage
+                submission_date = datetime.utcfromtimestamp(submission.created_utc)
+                if datetime(year=2021, month=3, day=10) < created and not (datetime(2022, 6, 2) < submission_date < datetime(2023, 1, 10)):
                     tracker.comment_lacks_context = True  # Should be a different error
                 # else:
                 #     print("Ignoring bad context cause it's old")
