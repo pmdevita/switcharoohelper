@@ -1,72 +1,11 @@
 from datetime import datetime
 
-import pytest
-
 from switcharoo.config.issues import IssueTracker
-from tests.mock import praw
-from switcharoo.core.history import SwitcharooLog
-from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.config import constants as consts
 
 
-@pytest.fixture(scope="function")
-def reddit():
-    reddit = praw.Reddit(username="switcharoohelper")
-    return reddit
-
-
-@pytest.fixture(scope="function")
-def last_switcharoo(reddit):
-    last_switcharoo = SwitcharooLog(reddit, {"type": "sqlite", "db_file": ":memory:"})
-    last_switcharoo.sync_issues()
-    yield last_switcharoo
-    last_switcharoo.unbind()
-
-
-@pytest.fixture(scope="function")
-def mock_creds(mocker):
-    mocker.patch.object(CredentialsLoader, 'config', {
-        "general": {
-            "dry_run": "true"
-        },
-        "reddit": {
-            "username": "switcharoohelper"
-        }
-    })
-
-
-@pytest.fixture(scope="function")
-def action(reddit, mock_creds):
-    from switcharoo.core.action import ModAction
-    return ModAction(reddit)
-
-
-@pytest.fixture(scope="function")
-def process(mocker):
-    import switcharoo.core.process
-    mocker.patch.object(switcharoo.core.process, "praw", praw)
-    mocker.patch.object(switcharoo.core.parse, "praw", praw)
-
-
-@pytest.fixture(scope="function")
-def first_roo(reddit, process, last_switcharoo, action):
-    import switcharoo.core.process
-    first = reddit.submission("firsts", link_post=False, body=None,
-                              date=datetime(2020, 1, 1, 1), author="otheruser",
-                              subreddit="subreddit1")
-    first_comment = reddit.comment("firstc", first,
-                                   f"Ah the old reddit [switcharoo](https://reddit.com/r/subreddit0/comments/aaaaa/_/?context=3)",
-                                   "user1",
-                                   date=datetime(2020, 1, 1, 2))
-    first_submission = reddit.submission("firstr", link_post=True, date=datetime(2020, 1, 1, 3), author="user1",
-                                         body=first_comment.get_link_and_context(3),
-                                         subreddit="switcharoo")
-    switcharoo.core.process.process(reddit, first_submission, last_switcharoo, action)
-    return first_comment
-
-
 class TestProcess:
-    def test_normal(self, reddit, last_switcharoo, action, first_roo, process):
+    def test_normal(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         second = reddit.submission("abcde", link_post=False, body=None,
                                    date=datetime(2020, 2, 1, 1), author="otheruser",
@@ -85,7 +24,7 @@ class TestProcess:
         model_issues = IssueTracker()
         assert issues == model_issues
 
-    def test_pre2020_user_mismatch(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_pre2020_user_mismatch(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         second = reddit.submission("abcde", link_post=False, body=None,
                                    date=datetime(2020, 2, 1, 1), author="otheruser",
@@ -104,7 +43,7 @@ class TestProcess:
         model_issues = IssueTracker()
         assert issues == model_issues
 
-    def test_user_mismatch(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_user_mismatch(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         second = reddit.submission("abcde", link_post=False, body=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
@@ -124,7 +63,7 @@ class TestProcess:
         model_issues.user_mismatch = True
         assert issues == model_issues
 
-    def test_sub_privated(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_sub_privated(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         second = reddit.submission("abcde", link_post=False, body=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
@@ -147,7 +86,7 @@ class TestProcess:
         assert issues == model_issues
 
     # Should be moved to a `reprocess` test suite
-    def test_sub_privated_allowed(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_sub_privated_allowed(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=True, update_requested=False)
@@ -173,7 +112,7 @@ class TestProcess:
         assert issues == model_issues
 
     # Should be moved to a `reprocess` test suite
-    def test_sub_privated_rejected(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_sub_privated_rejected(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=False, update_requested=False)
@@ -200,7 +139,7 @@ class TestProcess:
         model_issues.submission_deleted = True
         assert issues == model_issues
 
-    def test_comment_linked_bad_roo(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_comment_linked_bad_roo(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         # Do a first pass process
         last_switcharoo.update_privated_sub("subreddit2", allowed=False, update_requested=False)
@@ -232,7 +171,7 @@ class TestProcess:
         model_issues.comment_linked_bad_roo = True
         assert issues == model_issues
 
-    def test_comment_blocked_user(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_comment_blocked_user(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
         second = reddit.submission("zbcdf", link_post=False, body=None,
                                    date=datetime(2022, 2, 1, 1), author="otheruser",
@@ -251,9 +190,9 @@ class TestProcess:
         model_issues.user_blocked = True
         assert issues == model_issues
 
-    def test_6month_other_error(self, reddit, last_switcharoo, action, process, first_roo):
+    def test_6month_other_error(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
-        second = reddit.submission("zbcdf", link_post=False, body=None,
+        second = reddit.submission("zbcdf", link_post=False, content=None,
                                    date=datetime(2022, 8, 1, 1), author="otheruser",
                                    subreddit="subreddit2")
         second_comment = reddit.comment("12346", second,
