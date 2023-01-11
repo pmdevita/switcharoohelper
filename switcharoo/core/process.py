@@ -226,6 +226,9 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
     """
     tracker = IssueTracker()
 
+    if submission is None:
+        submission = roo.submission
+
     if submission:
         # Ignore announcements
         if submission.distinguished:
@@ -233,15 +236,15 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # Verify it is a link post (not a self post)
         if submission.is_self:
+            # Removed self submissions should be kept track of as well
+            if submission.removed_by_category is not None or submission.banned_at_utc is not None \
+                    or submission.selftext == "[deleted]":
+                tracker.submission_deleted = True
             # If meta, determine if it was incorrectly submitted as meta
             if not parse.is_meta_title(submission.title):
                 if parse.only_reddit_url(submission.title, submission.selftext):
                     tracker.submission_is_meta = True
                     return tracker
-            # Removed self submissions should be kept track of as well
-            if submission.removed_by_category is not None or submission.banned_at_utc is not None \
-                    or submission.selftext == "[deleted]":
-                tracker.submission_deleted = True
             # 2022/02/10 - Check if this is one of the faulty deleted link posts
             if submission.title == "[deleted by user]" and submission.selftext == "[removed]" and \
                     submission.author is None:
