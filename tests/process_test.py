@@ -45,6 +45,7 @@ def action(reddit, mock_creds):
 def process(mocker):
     import switcharoo.core.process
     mocker.patch.object(switcharoo.core.process, "praw", praw)
+    mocker.patch.object(switcharoo.core.parse, "praw", praw)
 
 
 @pytest.fixture(scope="function")
