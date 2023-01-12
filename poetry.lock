@@ -47,21 +47,6 @@ files = [
 unicode-backport = ["unicodedata2"]
 
 [[package]]
-name = "click"
-version = "8.1.3"
-description = "Composable command line interface toolkit"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
-    {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -196,21 +181,6 @@ ci = ["coveralls"]
 dev = ["betamax (>=0.8,<0.9)", "betamax-matchers (>=0.4.0,<0.5)", "betamax-serializers (>=0.2.0,<0.3)", "black", "flake8", "flynt", "mock (>=0.8)", "pre-commit", "pydocstyle", "pytest", "testfixtures (>4.13.2,<7)"]
 lint = ["black", "flake8", "flynt", "pre-commit", "pydocstyle"]
 test = ["betamax (>=0.8,<0.9)", "betamax-matchers (>=0.4.0,<0.5)", "betamax-serializers (>=0.2.0,<0.3)", "mock (>=0.8)", "pytest", "testfixtures (>4.13.2,<7)"]
-
-[[package]]
-name = "psaw"
-version = "0.1.0"
-description = "Pushshift.io API Wrapper for reddit.com public comment/submission search"
-category = "main"
-optional = false
-python-versions = ">=3"
-files = [
-    {file = "psaw-0.1.0-py3-none-any.whl", hash = "sha256:0d62ad9964dfbe9943b2089b25d3e44a7604794491a24a009c4262b2397fed6b"},
-]
-
-[package.dependencies]
-Click = "*"
-requests = "*"
 
 [[package]]
 name = "pymysql"
@@ -459,4 +429,4 @@ test = ["websockets"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8,<3.11"
-content-hash = "b075d26c6c3060d347133a4b761820b7aba5f28e60e1b701eba86496ff12a288"
+content-hash = "f561549234bf2704f422f04293f8891e09153deb32532df675a5e93e9fdd1ec6"

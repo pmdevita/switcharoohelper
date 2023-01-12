@@ -1,36 +1,22 @@
-# Bootstrap the main library into the path
-import os
-import sys
-from pathlib import Path
-tools_folder = Path(os.path.dirname(os.path.realpath(__file__)))
-root = str(tools_folder.parent)
-if root not in sys.path:
-    sys.path.append(root)
-
-from switcharoo.core import CredentialsLoader, parse
-from switcharoo.config import constants as consts
-
-credentials = CredentialsLoader.get_credentials(tools_folder / "../credentials.ini")['reddit']
-
-import psaw
 import praw.exceptions
 import prawcore.exceptions
 import time
-import pendulum
 import webbrowser
 from datetime import datetime, timedelta
 
+from switcharoo.config.credentials import CredentialsLoader
+from switcharoo.core import parse
+from switcharoo.config import constants as consts
 from switcharoo.core.history import SwitcharooLog
-from switcharoo.core import tracer as argparser
+from switcharoo.config.arguments import tracer as argparser
 
+credentials = CredentialsLoader.get_credentials()['reddit']
 
 reddit = praw.Reddit(client_id=credentials["client_id"],
                      client_secret=credentials["client_secret"],
                      user_agent=consts.user_agent,
                      username=credentials["username"],
                      password=credentials["password"])
-
-pushshift = psaw.PushshiftAPI(reddit)
 
 switcharoo = reddit.subreddit("switcharoo")
 
