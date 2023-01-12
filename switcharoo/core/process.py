@@ -96,7 +96,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         else:
             if verbose:
                 roo.print()
-                print("Roo has gone bad")
+                print(f"Roo has gone bad {old_tracker} -> {new_tracker}")
             action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
             new_tracker.submission_deleted = True
             last_switcharoo.reset_request(roo=roo)
@@ -106,7 +106,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         # If this roo was miraculously cured of bad issues
         if old_tracker.has_bad_issues():
             # Then reinstate it.
-            print(f"Roo {roo.id} was miraculously cured of bad issues")
+            print(f"{roo} was miraculously cured of bad issues")
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
             return new_tracker
 
@@ -117,7 +117,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         #     print("Have previously responded, adding to DB")
         #     request = last_switcharoo.update_request(roo, requests=1)
 
-        last_good = last_switcharoo.last_good(roo, offset=0)
+        last_good = last_switcharoo.last_good(roo)
         # Double check the correct link hasn't changed since last time
         # If it has we need to issue a new request for the new link
         same_link = True
@@ -134,7 +134,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
                 # If we are within cooldown, remind them and increase remind count
                 action.act_again(reply_object, new_tracker, request, grace_period, stage, last_good)
         elif stage == ALL_ROOS:
-            print("Roo issues have changed")
+            print(f"Roo issues have changed {old_tracker} -> {new_tracker}")
             # New situation, reset the request if it's there
             if request:
                 request = last_switcharoo.reset_request(request=request)
@@ -176,14 +176,18 @@ def add_comment(reddit, last_switcharoo, link):
 
 def double_check_link(reddit, last_switcharoo: SwitcharooLog, roo: Switcharoo):
     comment = roo.comment
+    if comment is None:
+        print(f"{roo} doesn't have a comment, link was maybe too malformed.")
+        return
     comment_url = parse.RedditURL(comment.permalink)
     comment_url.params['context'] = roo.context
     link = parse.parse_comment(comment.body)
     if not link.comment_id:
+        print(f"{roo}'s submission seems to be linked to the wrong comment. {roo.get_issues()}")
         if not comment:
             print(roo, f"https://reddit.com{comment.permalink}?context={roo.context}")
             input()
-        new_link = parse.find_roo_comment(comment)
+        new_link = parse.find_roo_comment(comment, use_pushshift=False)
         if new_link:
             if new_link.comment_id:
                 if comment_url.comment_id == new_link.comment_id:
@@ -204,6 +208,11 @@ def double_check_link(reddit, last_switcharoo: SwitcharooLog, roo: Switcharoo):
                     new_link = parse.RedditURL(option)
                 last_switcharoo.update(roo, thread_id=new_link.thread_id, comment_id=new_link.comment_id,
                                        context=new_link.params.get("context", link.params.get('context', 0)))
+                if roo.get_issues().submission_deleted:
+                    print("Roo was deleted earlier, reinstate it?")
+                    option = input("(y/n):")
+                    if option == "y":
+                        roo.submission.mod.approve()
                 return
         print(roo, f"https://reddit.com{comment.permalink}?context={roo.context}")
         print("Paste in a new link to replace otherwise enter to continue")

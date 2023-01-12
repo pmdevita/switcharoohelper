@@ -44,6 +44,8 @@ def get_newest_id(subreddit, index=0):
 def check_up():
     args = parser.parse_args()
     print("SwitcharooHelper Check-up v{} using {} Ctrl+C to stop".format(consts.version, action.__class__.__name__))
+    if args.no_delete_check:
+        print("Warning: Skipping the delete check! Be careful!")
 
     start = args.starting_roo
     if not start:
@@ -92,8 +94,13 @@ def check_up():
 
             if args.double_check_link:
                 print("\nDouble checking links\n")
-                for roo in roos[:-2]:
+                for roo in roos:
                     double_check_link(reddit, last_switcharoo, roo)
+                # Refresh the roos to get any changed data
+                roos = last_switcharoo.get_roos(after_roo=start,
+                                                limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
+                                                meta=args.include_meta,
+                                                date_limit=date_limit)
 
             if not args.no_delete_check:
                 print("\nChecking for deleted/bad roos\n")
@@ -111,7 +118,8 @@ def check_up():
                     reprocess(reddit, roo, last_switcharoo, action, stage=consts.ALL_ROOS)
 
             if roos:
-                roos = last_switcharoo.get_roos(after_roo=roos[-4 if len(roos) > 3 else 0],
+                start = roos[-4 if len(roos) > 3 else 0]
+                roos = last_switcharoo.get_roos(after_roo=start,
                                                 limit=max(min(DB_LIMIT, limit), 0) if limit is not None else DB_LIMIT,
                                                 meta=args.include_meta,
                                                 date_limit=date_limit)
@@ -133,8 +141,9 @@ def check_up():
 
     except Exception as e:
         if mode == "production":
-            reddit.redditor(operator).message("SH Error!", "Help I crashed!\n\n    {}".format(
-                str(traceback.format_exc()).replace('\n', '\n    ')))
+            reddit.redditor(operator).message(subject="SH Error!",
+                                              message="Help I crashed!\n\n    " +
+                                                      str(traceback.format_exc()).replace('\n', '\n    '))
         raise
 
 

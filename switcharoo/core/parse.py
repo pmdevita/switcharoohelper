@@ -92,49 +92,7 @@ def process_url_params(url_params):
     return params
 
 
-
-def thread_url_to_id(url):
-    """
-    TODO: Make a regex expression instead
-    Get ids from a reddit thread link
-    :param url:
-    :return: Thread ID and comment ID
-    """
-
-    match = REPatterns.reddit_strict_parse.match(url)
-
-    if match:
-        thread_id = match[4]
-        comment_id = match[5]
-    else:
-        return None, None
-
-    # parts = url.split("/")
-    #
-    # # Check if it is a link to
-    # if "comments" not in parts:
-    #     return None, None
-    #
-    # thread_id = parts[parts.index("comments") + 1]
-    #
-    # # Check if there is also a comment id
-    # if parts.index("comments") + 3 <= len(parts) - 1:
-    #     comment_id = parts[parts.index("comments") + 3]
-    #
-    #     # Remove any extra URL parameters
-    #     comment_id = comment_id.split("?")[0]
-    #
-    #     # Someone submitted a '.' as the comment id once ¯\_(ツ)_/¯
-    #     if len(comment_id) != 7:
-    #         comment_id = None
-    #
-    # else:
-    #     comment_id = None
-
-    return thread_id, comment_id
-
-
-def parse_comment(text):
+def parse_comment(text) -> RedditURL:
     """Get url from switcharoo comment"""
     # Grab all URLs from all links
     matches = REPatterns.link.findall(text)
@@ -226,12 +184,15 @@ def only_reddit_url(title, body):
         return total_len <= threshold
 
 
-def find_roo_recursive(comment, starting_depth, depth):
+def find_roo_recursive(comment, starting_depth, depth, use_pushshift=True):
     if not depth:
         return None
     if comment.body == "[deleted]" or comment.body == "[removed]":
         print("Comment was deleted")
-        url = search_pushshift(comment)
+        if use_pushshift:
+            url = search_pushshift(comment)
+        else:
+            url = RedditURL("")
     else:
         body = comment.body
         url = parse_comment(body)
@@ -245,7 +206,7 @@ def find_roo_recursive(comment, starting_depth, depth):
         except praw.exceptions.ClientException:
             return None
         for reply in comment.replies:
-            url = find_roo_recursive(reply, starting_depth, depth - 1)
+            url = find_roo_recursive(reply, starting_depth, depth - 1, use_pushshift)
             if url:
                 return url
     return None
@@ -271,8 +232,9 @@ def find_roo_parent_recursive(comment, starting_depth, depth):
             return url
     return None
 
-def find_roo_comment(comment):
-    roo = find_roo_recursive(comment, 4, 4)
+
+def find_roo_comment(comment, use_pushshift=True):
+    roo = find_roo_recursive(comment, 4, 4, use_pushshift)
     if roo:
         return roo
     roo = find_roo_parent_recursive(comment, 3, 3)

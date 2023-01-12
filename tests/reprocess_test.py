@@ -37,3 +37,5 @@ class TestReprocess:
         assert issues == model_issues
         assert issues.has_bad_issues()
 
+    # TODO: Write a test that checks that a roo marked as comment_has_no_link, once updated with the correct ids in the
+    # database, no longer produces that error.
