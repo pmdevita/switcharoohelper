@@ -1,8 +1,10 @@
+import typing
 from datetime import datetime, timedelta
 from pony.orm import Database, PrimaryKey, Required, Optional, db_session, select, commit, Set, desc, \
     TransactionIntegrityError, count
 from switcharoo.config.issues import GetIssues
 import praw
+import praw.models
 import praw.exceptions
 from switcharoo.config.issues import issues_list, IssueTracker
 from switcharoo.config.credentials import CredentialsLoader
@@ -49,13 +51,14 @@ class Switcharoo(db.Entity):
     fix_linked_from = Set('FixRequests', cascade_delete=False, reverse="linked_roo")
     delete_later = Optional('DeleteLater', cascade_delete=True)
 
-    def _link_reddit(self, reddit):
+    def _link_reddit(self, db: 'SwitcharooLog', reddit):
         self.reddit = reddit
+        self._db = db
         self._submission = None
         self._comment = None
 
     @property
-    def submission(self):
+    def submission(self) -> typing.Optional[praw.models.Submission]:
         if not self.submission_id:
             return None
         if not self._submission:
@@ -63,25 +66,34 @@ class Switcharoo(db.Entity):
         return self._submission
 
     @property
-    def comment(self):
+    def comment(self) -> typing.Optional[praw.models.Comment]:
         if not self.comment_id:
             return None
         if not self._comment:
             self._comment = self.reddit.comment(self.comment_id)
         return self._comment
 
+    def get_issues(self) -> IssueTracker:
+        return self._db.get_issues(self)
+
     def print(self):
+        return str(self)
+
+    def __str__(self):
         try:
             if self.submission_id:
-                print(f"Roo {self.id}: {self.submission.title} by {self.submission.author}"
-                      f" {datetime.fromtimestamp(self.submission.created_utc)}")
+                return f"Roo {self.id}: {self.submission.title} by {self.submission.author}" \
+                       f" {datetime.fromtimestamp(self.submission.created_utc)}"
             else:
-                print(f"Roo {self.id}: {self.comment.author if self.comment.author else ''}"
-                      f" {datetime.fromtimestamp(self.comment.created_utc if self.comment.author else '')}")
+                return f"Roo {self.id}: {self.comment.author if self.comment.author else ''}" \
+                       f" {datetime.fromtimestamp(self.comment.created_utc if self.comment.author else '')}"
         except praw.exceptions.ClientException:
-            print(f"Roo {self.id}")
+            return f"Roo {self.id}"
 
     def equals(self, other):
+        #     return self == other
+        #
+        # def __eq__(self, other):
         if isinstance(other, Switcharoo):
             return self.id == other.id
         return False
@@ -166,7 +178,7 @@ class SwitcharooLog:
 
     def _link_reddit(self, roo):
         """Give DB entity a reference to the Reddit object"""
-        roo._link_reddit(self.reddit)
+        roo._link_reddit(self, self.reddit)
 
     def __del__(self):
         self.db.disconnect()
