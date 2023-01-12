@@ -3,6 +3,7 @@ import prawcore.exceptions
 from datetime import datetime, timedelta
 from switcharoo.core import parse
 from switcharoo.config.issues import IssueTracker
+from switcharoo.core.parse import RedditURL
 from switcharoo.core.reddit import ReplyObject
 from switcharoo.config.constants import ONLY_BAD, ALL_ROOS
 from switcharoo.core.history import SwitcharooLog, Switcharoo
@@ -271,8 +272,11 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # It's a roo, add it to the list of all roos
 
+        # URL related formatting check - Is the submission to r/switcharoo done correctly?
+
         submission_url = parse.RedditURL(submission.url)
 
+        # If the roo submission is deleted
         if submission.removed_by_category is not None or submission.banned_at_utc is not None \
                 or submission.selftext == "[deleted]":
             tracker.submission_deleted = True
@@ -348,9 +352,16 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
     else:
         # Not sure why this was happening every time
-        # roo = last_switcharoo.update(roo, comment_id=comment.id)
         if init_db:
             roo = last_switcharoo.update(roo, comment_id=comment.id)
+
+    # If we are not initing the db, double check this url matches the db one and if not, use the db one
+    if not init_db:
+        if submission_url.comment_id != roo.comment_id:
+            print("Database was updated with a different comment ID, using that instead.")
+            submission_url = RedditURL(roo.comment)
+            submission_url.params["context"] = roo.context
+            comment = roo.comment
 
     if not comment:
         comment = roo.comment
