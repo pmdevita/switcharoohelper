@@ -300,6 +300,13 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
                         print(
                             f"{roo.id} Banned by automoderator but previous comment isn't linked to it so leaving as is")
 
+        # If we are not initing the db, double check this url matches the db one and if not, use the db one
+        if not init_db:
+            if submission_url.comment_id != roo.comment_id:
+                print("Database was updated with a different comment ID, using that instead.")
+                submission_url = RedditURL(roo.comment)
+                submission_url.params["context"] = roo.context
+
         # Some URLs may not pass the stricter check, probably because they did something wrong
         if not submission_url.is_reddit_url:
             tracker.submission_bad_url = True
@@ -357,14 +364,6 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
         # Not sure why this was happening every time
         if init_db:
             roo = last_switcharoo.update(roo, comment_id=comment.id)
-
-    # If we are not initing the db, double check this url matches the db one and if not, use the db one
-    if not init_db:
-        if submission_url.comment_id != roo.comment_id:
-            print("Database was updated with a different comment ID, using that instead.")
-            submission_url = RedditURL(roo.comment)
-            submission_url.params["context"] = roo.context
-            comment = roo.comment
 
     if not comment:
         comment = roo.comment

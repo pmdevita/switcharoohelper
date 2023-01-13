@@ -86,7 +86,7 @@ class Switcharoo(db.Entity):
                        f" {datetime.fromtimestamp(self.submission.created_utc)}"
             else:
                 return f"Roo {self.id}: {self.comment.author if self.comment.author else ''}" \
-                       f" {datetime.fromtimestamp(self.comment.created_utc if self.comment.author else '')}"
+                       f" {datetime.fromtimestamp(self.comment.created_utc) if self.comment.author else ''}"
         except praw.exceptions.ClientException:
             return f"Roo {self.id}"
 

@@ -39,3 +39,7 @@ class TestReprocess:
 
     # TODO: Write a test that checks that a roo marked as comment_has_no_link, once updated with the correct ids in the
     # database, no longer produces that error.
+
+    # TODO: Write a test that checks if a roo was corrected in the database, the submission_linked_thread no longer happens
+
+    # TODO: SwitcharooHistory test: test printing a roo without a submission id
