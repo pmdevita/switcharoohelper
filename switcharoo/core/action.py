@@ -33,9 +33,9 @@ class BaseAction:
     def add_issue(self, issue):
         self.issues.add(issue)
 
-    def act(self, issues, submission, last_good_submission=None):
+    def act(self, roo, issues, submission, last_good_submission=None):
         if issues.has_issues():
-            self.process(issues, submission, last_good_submission)
+            self.process(roo, issues, submission, last_good_submission)
         else:
             print(" Correct")
 
@@ -63,7 +63,7 @@ class BaseAction:
                 if stage == ALL_ROOS:
                     # They've never been asked (but this isn't none for some reason), ask nicely
                     # Not sure if this would even ever fire
-                    self.process(issues, reply_object, last_good_submission, strings=NewIssueStrings)
+                    self.process(roo, issues, reply_object, last_good_submission, strings=NewIssueStrings)
                     # If we are on a dry run, then delete this already null request
                     if dry_run:
                         request.reset()
@@ -76,7 +76,7 @@ class BaseAction:
                     request.reset()
             elif stage == ALL_ROOS:
                 # They've been told once, they get one more warning
-                self.process(issues, reply_object, last_good_submission, strings=ReminderStrings)
+                self.process(roo, issues, reply_object, last_good_submission, strings=ReminderStrings)
                 if not dry_run:
                     request.set_attempts(request.attempts + 1)
         else:
