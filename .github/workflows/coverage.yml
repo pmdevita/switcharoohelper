@@ -27,9 +27,7 @@ jobs:
       - name: Extract coverage number
         id: coverage
         shell: bash
-        run: |
-          ls
-          echo "coverage=${cat total_coverage.txt}" >> $GITHUB_OUTPUT
+        run: echo "coverage=$(cat total_coverage.txt)" >> $GITHUB_OUTPUT
       - name: Create Awesome Badge
         uses: schneegans/dynamic-badges-action@v1.6.0
         with:
