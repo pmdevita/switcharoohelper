@@ -21,7 +21,8 @@ jobs:
       - name: Download Coverage data
         uses: dawidd6/action-download-artifact@v2
         with:
-          commit: ${{github.event.pull_request.head.sha}}
+          workflow: python-app.yml
+          commit: ${{github.sha}}
           name: coverage_data
       - name: Extract coverage number
         id: coverage
