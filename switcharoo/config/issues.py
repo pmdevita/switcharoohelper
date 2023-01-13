@@ -11,7 +11,7 @@ issues_list = [
     {"type": "comment_deleted", "bad": True, "resubmit": False},
 
     # The submission links to a comment with no link
-    {"type": "comment_has_no_link", "bad": True, "resubmit": True},
+    {"type": "comment_has_no_link", "bad": True, "resubmit": False},
 
     # The switcharoo comment is linked to the wrong thing
     {"type": "comment_linked_wrong", "bad": False, "resubmit": False},

@@ -1,12 +1,17 @@
 from random import randrange
 from datetime import datetime, timedelta, date, time
+
+import praw
+
+from switcharoo.config.issues import IssueTracker
 from switcharoo.config.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
 from switcharoo.config.constants import ALL_ROOS
+from switcharoo.core.history import Switcharoo
 from switcharoo.core.reddit import ReplyObject, UserDoesNotExist
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.core.operator import message_private_sub
-from switcharoo.core.parse import REPatterns, RedditURL
+from switcharoo.core.parse import REPatterns, RedditURL, find_roo_comment
 
 creds = CredentialsLoader.get_credentials()['general']
 dry_run = creds['dry_run'].lower() != "false"
@@ -34,11 +39,11 @@ class BaseAction:
         else:
             print(" Correct")
 
-    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
+    def process(self, roo: Switcharoo, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
         pass
 
     # I'm sorry for the name
-    def act_again(self, reply_object: ReplyObject, issues, request, grace_period, stage, last_good_submission):
+    def act_again(self, roo: Switcharoo, reply_object: ReplyObject, issues, request, grace_period, stage, last_good_submission):
         # If it has been some time since we
         if request.not_responded_in_days(grace_period) or request.attempts == 0 or dry_run:
             if request.attempts > 30:
@@ -49,7 +54,7 @@ class BaseAction:
                 if time > datetime(year=2021, month=3, day=11, hour=0, minute=0,
                                    second=0) or issues.comment_linked_bad_roo or issues.comment_linked_wrong:
                     issues.user_noncompliance = True
-                    self.process(issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
+                    self.process(roo, issues, reply_object, last_good_submission, strings=NewIssueDeleteStrings)
                     if not dry_run:
                         request.reset()
                 else:
@@ -87,7 +92,7 @@ class BaseAction:
 
 
 class PrintAction(BaseAction):
-    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
+    def process(self, roo: Switcharoo, issues, reply_object: ReplyObject, last_good_submission=None, strings=None):
         message_lines = []
         if issues.submission_lacks_context:
             message_lines.append("{} submission link does not have ?context".format(
@@ -154,7 +159,8 @@ class ModAction(BaseAction):
                     return
             reply_object.reply("Thanks from r/switcharoo!", ModActionStrings.thank_you + ModActionStrings.footer)
 
-    def process(self, issues, reply_object: ReplyObject, last_good_submission=None, strings=None, mute=False):
+    def process(self, roo: Switcharoo, issues: IssueTracker, reply_object: ReplyObject, last_good_submission=None,
+                strings=None, mute=False):
         # List of descriptions of every error the roo made
         message_lines = []
         # Do we request the user resubmit the roo?
@@ -185,25 +191,22 @@ class ModAction(BaseAction):
         # Should the bot ask the mod team for further assistance?
         request_assistance = False
 
-        last_good_url = None
-        context = "0"
-        # If we do have context, format the link ourselves with it
-        if last_good_submission.context is not None:
-            context = str(last_good_submission.context)
-            if last_good_submission.context > 0:
-                submission_url = RedditURL(last_good_submission.comment)
-                submission_url.params["context"] = last_good_submission.context
-                last_good_url = submission_url.to_link(self.reddit)
-        if not last_good_url:
-            if last_good_submission.submission:
-                submission_url = RedditURL(last_good_submission.submission.url)
-                last_good_url = submission_url.to_link(self.reddit)
-            else:
-                last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
-
         comment_url = reply_object.permalink
         if reply_object.is_submission():
             comment_url = reply_object.get_comment()
+
+        # The replacements done in the string templates, to insert URLs or whatever
+        string_tokens = {
+            "last_good_url": get_last_good_url(self.reddit, last_good_submission),
+            "last_good_context": get_url_context(last_good_submission),
+            "comment_url": comment_url,
+            "correct_comment_url": None
+        }
+
+        if issues.comment_has_no_link:
+            correct_comment_url = find_roo_comment(roo.comment, use_pushshift=False)
+            if correct_comment_url:
+                string_tokens["correct_comment_url"] = correct_comment_url.to_link(self.reddit)
 
         for issue in issues:
             # Retrieve message string for this issue
@@ -212,8 +215,7 @@ class ModAction(BaseAction):
                 continue
             if not string:
                 raise Exception(f"Unsupported issue {issue.name} for string set {issue_strings}")
-            message_lines.append(string.format(last_good_url=last_good_url, last_good_context=context,
-                                               comment_url=comment_url))
+            message_lines.append(string.format(**string_tokens))
             if not issue.resubmit:
                 resubmit = False
 
@@ -264,6 +266,31 @@ class ModAction(BaseAction):
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
         #                                                 "{}".format(submission.url))
+
+
+def get_last_good_url(reddit: praw.Reddit, last_good_submission: Switcharoo):
+    last_good_url = None
+    # If we do have context, format the link ourselves with it
+    if last_good_submission.context is not None:
+        if last_good_submission.context > 0:
+            submission_url = RedditURL(last_good_submission.comment)
+            submission_url.params["context"] = last_good_submission.context
+            last_good_url = submission_url.to_link(reddit)
+    if not last_good_url:
+        if last_good_submission.submission:
+            submission_url = RedditURL(last_good_submission.submission.url)
+            last_good_url = submission_url.to_link(reddit)
+        else:
+            last_good_url = f"https://reddit.com{last_good_submission.comment.permalink}"
+    return last_good_url
+
+
+def get_url_context(last_good_submission):
+    context = "0"
+    # If we do have context, format the link ourselves with it
+    if last_good_submission.context is not None:
+        context = str(last_good_submission.context)
+    return context
 
 
 def decide_subreddit_privated(reddit, last_switcharoo, subreddit):

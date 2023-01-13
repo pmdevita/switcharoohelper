@@ -6,6 +6,24 @@ def format_context(context):
     return f"[]({CONTEXT_HEADER}{{{json.dumps(context)}}})"
 
 
+class CommentHasNoLink:
+    template = "the comment you've linked to doesn't seem to have a switcharoo linked in it. This " \
+               "is *almost always* a case of just linking the wrong comment."
+    found_url = " I did a quick search and I think the actual URL you meant to submit was " \
+                "this one.\n\n{correct_comment_url}\n\nDouble check this is the correct link and submit " \
+                "it again. Thanks!"
+    not_found_url = " I did a quick search but I wasn't able to find the correct comment. You'll want to " \
+                    "submit the link to your comment that has the \"Ah the ol' switcharoo!\" message " \
+                    "with a link to next switcharoo."
+
+    @classmethod
+    def format(cls, correct_comment_url=None, **kwargs):
+        if correct_comment_url:
+            return cls.template + cls.found_url.format(correct_comment_url=correct_comment_url, **kwargs)
+        else:
+            return cls.template + cls.not_found_url
+
+
 class IssueStrings:
     submission_lacks_context = ""
     submission_linked_thread = ""
@@ -41,8 +59,7 @@ class ModIssueStrings(IssueStrings):
                       "different account and look for your comment.\n\nIf you think your comment was " \
                       "removed by was that subreddit's moderators, please let us know so we can add it to " \
                       "the forbidden subs list. Also, sorry. It sucks when this happens."
-    comment_has_no_link = "your submission does not link to a switcharoo. This usually happens when you link the " \
-                          "wrong comment. Read the sidebar or stickied \"how to\" post for more information."
+    comment_has_no_link = CommentHasNoLink
     comment_linked_wrong = "I'm not sure what you are linking into but it doesn't seem quite right. Can you change " \
                            "your link to here instead?\n\n{last_good_url}\n\nThank you!"
     comment_lacks_context = "the roo you have **linked to in your comment** (not the URL you have submitted) is " \

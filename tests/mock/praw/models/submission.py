@@ -8,6 +8,7 @@ from tests.mock.praw.models.redditor import MockRedditor
 class MockSubmission:
     def __init__(self, submission_id, link_post: bool, content, date: datetime, author: str, subreddit, title="Roo Title", private=False):
         self.id = submission_id
+        self.private = private
         self.distinguished = False
         self.is_self = not link_post
         self._content = content
@@ -20,7 +21,6 @@ class MockSubmission:
         self.banned_by = None
         self.subreddit = subreddit
         self.created_utc = date.timestamp()
-        self.private = private
         self.permalink = f"/r/{subreddit}/comments/{submission_id}/slug"
         self.mod = MockSubmissionModerator(self)
 

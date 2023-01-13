@@ -209,5 +209,48 @@ class TestProcess:
         model_issues.comment_linked_wrong = True
         assert issues == model_issues
 
+    def test_comment_has_no_link(self, reddit, last_switcharoo, action, first_roo):
+        import switcharoo.core.process
+        second = reddit.submission("zbcdf", link_post=False, content=None,
+                                   date=datetime(2022, 8, 1, 1), author="otheruser",
+                                   subreddit="subreddit2")
+        second_comment = reddit.comment("12346", second,
+                                        "no link here just funny comment",
+                                        "user1",
+                                        date=datetime(2022, 8, 1, 2))
+        second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 8, 1, 3), author="user1",
+                                              content=second_comment.get_link_and_context(3),
+                                              subreddit="switcharoo")
+        third_comment = reddit.comment("12347", second,
+                                       f"Ah the old reddit [switcharoo]"
+                                       f"({first_roo.get_link_and_context(3)})",
+                                       "usergabillion", parent=second_comment,
+                                       date=datetime(2022, 8, 1, 2))
+        switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
+        issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
+        model_issues = IssueTracker()
+        model_issues.comment_has_no_link = True
+        # TODO: Double check it calls CommentHasNoLink with the correct url
+        assert issues == model_issues
+
+    def test_comment_has_no_link_notfound(self, reddit, last_switcharoo, action, first_roo):
+        import switcharoo.core.process
+        second = reddit.submission("zbcdf", link_post=False, content=None,
+                                   date=datetime(2022, 8, 1, 1), author="otheruser",
+                                   subreddit="subreddit2")
+        second_comment = reddit.comment("12346", second,
+                                        "no link here just funny comment",
+                                        "user1",
+                                        date=datetime(2022, 8, 1, 2))
+        second_submission = reddit.submission("zbcdg", link_post=True, date=datetime(2022, 8, 1, 3), author="user1",
+                                              content=second_comment.get_link_and_context(3),
+                                              subreddit="switcharoo")
+        switcharoo.core.process.process(reddit, second_submission, last_switcharoo, action)
+        issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
+        model_issues = IssueTracker()
+        model_issues.comment_has_no_link = True
+        # TODO: Double check it calls CommentHasNoLink without the correct url
+        assert issues == model_issues
+
     # Todo: Write a test that generates a meta post that is not detected by the bot
     # We then remove it, double check that the database thinks it was removed

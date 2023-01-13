@@ -9,7 +9,7 @@ from tests.mock.praw.exceptions import ClientException, Forbidden
 
 
 class MockComment:
-    def __init__(self, comment_id, submission: MockSubmission, body, author, date, private=False, blocked=False):
+    def __init__(self, comment_id, submission: MockSubmission, body, author, date, private=False, blocked=False, parent=None):
         self.id = comment_id
         self.thread_id = submission.id
         self.body = body
@@ -18,6 +18,8 @@ class MockComment:
         self.private = private
         self.permalink = f"/r/{submission.subreddit}/comments/{submission.id}/_/{self.id}/"
         self.unrepliable_reason = None
+        self.replies: list['MockComment'] = []
+        self._parent = parent if parent else submission
         if blocked:
             self.body = "[unavailable]"
             self.unrepliable_reason = "NEAR_BLOCKER"
@@ -31,6 +33,9 @@ class MockComment:
             return f"https://reddit.com{self.permalink}?context={context}"
         else:
             return f"https://reddit.com{self.permalink}"
+
+    def parent(self):
+        return self._parent
 
     def __getattr__(self, item):
         if not super(MockComment, self).__getattribute__("private"):

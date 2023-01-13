@@ -24,10 +24,13 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
     # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
+    # Because we init'd the roo in the database, we need to requery the roo for updated data
+    roo = last_switcharoo.get_roo(roo_id=roo.id)
+
     # If it has issues, perform an action to correct it
     if tracker.has_issues():
         last_good = last_switcharoo.last_good(before_roo=roo, offset=0)
-        action.process(tracker, ReplyObject(submission), last_good)
+        action.process(roo, tracker, ReplyObject(submission), last_good)
         last_switcharoo.update(roo, roo_issues=tracker, reset_issues=True)
         # If this roo has bad issues, we'll probably want to delete it later since it
         # was immediately deleted, making it not really useful
@@ -98,7 +101,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
             if verbose:
                 roo.print()
                 print(f"Roo has gone bad {old_tracker} -> {new_tracker}")
-            action.process(new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
+            action.process(roo, new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
             new_tracker.submission_deleted = True
             last_switcharoo.reset_request(roo=roo)
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
@@ -133,7 +136,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
                 request = last_switcharoo.update_request(roo, requests=0, linked_roo=last_good)
             if stage == ALL_ROOS:
                 # If we are within cooldown, remind them and increase remind count
-                action.act_again(reply_object, new_tracker, request, grace_period, stage, last_good)
+                action.act_again(roo, reply_object, new_tracker, request, grace_period, stage, last_good)
         elif stage == ALL_ROOS:
             print(f"Roo issues have changed {old_tracker} -> {new_tracker}")
             # New situation, reset the request if it's there
@@ -144,11 +147,11 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
             # If we are within cooldown, remind them and increase remind count
             if old_tracker.has_issues():
                 # Either they fixed and a new issue came up or it's a new issue
-                action.act_again(reply_object, new_tracker, request, grace_period, stage,
+                action.act_again(roo, reply_object, new_tracker, request, grace_period, stage,
                                  last_good)
             else:
                 # This was working before, the chain might have just changed around them.
-                action.act_again(reply_object, new_tracker, request, grace_period, stage,
+                action.act_again(roo, reply_object, new_tracker, request, grace_period, stage,
                                  last_good)
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you

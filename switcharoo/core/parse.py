@@ -233,7 +233,7 @@ def find_roo_parent_recursive(comment, starting_depth, depth):
     return None
 
 
-def find_roo_comment(comment, use_pushshift=True):
+def find_roo_comment(comment, use_pushshift=True) -> typing.Optional[RedditURL]:
     roo = find_roo_recursive(comment, 4, 4, use_pushshift)
     if roo:
         return roo
