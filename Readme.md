@@ -1,5 +1,7 @@
 # SwitcharooHelper
 
+![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/pmdevita/5c26e2c651a043ec65572d815dcbb3cf/raw/switcharoohelper_coverage.json)
+
 Verifies and maintains correct linking on Reddit's ol' switcharoo. switcharoohelper works by checking a switcharoo for 
 a set of known issues, almost like a unit test. 
 
