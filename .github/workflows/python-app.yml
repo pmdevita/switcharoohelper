@@ -25,7 +25,7 @@ jobs:
     - name: Run test
       run: |
         poetry run pytest --cov=switcharoo
-        coverage json -o /dev/stdout | jq .totals.percent_covered | awk '{print int($1+0.5)}' > total_coverage.txt
+        poetry run coverage json -o /dev/stdout | jq .totals.percent_covered | awk '{print int($1+0.5)}' > total_coverage.txt
     - name: Upload Coverage
       uses: actions/upload-artifact@v3
       with:
