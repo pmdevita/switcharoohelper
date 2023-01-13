@@ -19,8 +19,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Download Coverage data
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
+          commit: ${{github.event.pull_request.head.sha}}
           name: coverage_data
       - name: Extract coverage number
         id: coverage
