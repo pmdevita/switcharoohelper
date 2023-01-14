@@ -302,10 +302,15 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
 
         # If we are not initing the db, double check this url matches the db one and if not, use the db one
         if not init_db:
-            if submission_url.comment_id != roo.comment_id:
+            if submission_url.comment_id != roo.comment_id and roo.comment_id and roo.comment:
                 print("Database was updated with a different comment ID, using that instead.")
                 submission_url = RedditURL(roo.comment)
                 submission_url.params["context"] = roo.context
+
+        # If we are in the middle of adding this to the db, add the thread and comment ids now
+        if init_db:
+            roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id,
+                                         subreddit=submission_url.subreddit)
 
         # Some URLs may not pass the stricter check, probably because they did something wrong
         if not submission_url.is_reddit_url:
@@ -354,11 +359,6 @@ def check_errors(reddit, last_switcharoo: SwitcharooLog, roo, init_db=False, sub
             return tracker
 
         # Todo: Make sure there is not already a good roo older than this one with these thread and comment ids
-
-        # If we are in the middle of adding this to the db, add the thread and comment ids now
-        if init_db:
-            roo = last_switcharoo.update(roo, thread_id=submission_url.thread_id, comment_id=submission_url.comment_id,
-                                         subreddit=submission_url.subreddit)
 
     else:
         # Not sure why this was happening every time
