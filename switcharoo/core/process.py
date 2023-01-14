@@ -9,6 +9,7 @@ from switcharoo.config.constants import ONLY_BAD, ALL_ROOS
 from switcharoo.core.history import SwitcharooLog, Switcharoo
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.core.action import decide_subreddit_privated, increment_user_fixes
+from switcharoo.utils import get_input_option, get_grace_period
 
 creds = CredentialsLoader.get_credentials()['general']
 DRY_RUN = creds['dry_run'].lower() != "false"
@@ -81,14 +82,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     if not reply_object:
         reply_object = ReplyObject.from_roo(roo)
 
-    # Scale cooldown time with age of roo
-    grace_period = 3
-    if roo.time < datetime.now() - timedelta(days=360):
-        grace_period = 30
-    if roo.time < datetime.now() - timedelta(days=180):
-        grace_period = 14
-    elif roo.time < datetime.now() - timedelta(days=30):
-        grace_period = 7
+    grace_period = get_grace_period(roo)
 
     # If this roo has bad issues or it was marked for noncompliance,
     # it should be updated immediately to be removed from the chain
@@ -204,8 +198,7 @@ def double_check_link(reddit, last_switcharoo: SwitcharooLog, roo: Switcharoo):
                     new_link.params['context'] = int(input())
                 print("Should", f"https://reddit.com{comment.permalink}?context={roo.context}", "be actually",
                       new_link.to_link(reddit), "?")
-                print("(y/n/new_link)")
-                option = input()
+                option = get_input_option(["y", "n", "new_link"])
                 if option == "n":
                     return
                 elif option != "y":
@@ -214,7 +207,7 @@ def double_check_link(reddit, last_switcharoo: SwitcharooLog, roo: Switcharoo):
                                        context=new_link.params.get("context", link.params.get('context', 0)))
                 if roo.get_issues().submission_deleted:
                     print("Roo was deleted earlier, reinstate it?")
-                    option = input("(y/n):")
+                    option = get_input_option(["y", "n"])
                     if option == "y":
                         roo.submission.mod.approve()
                 return
