@@ -23,6 +23,7 @@ class TestProcess:
         issues = last_switcharoo.get_issues(last_switcharoo.get_roo(submission_id=second_submission.id))
         model_issues = IssueTracker()
         assert issues == model_issues
+        assert second_submission.mod.matches_flair(consts.FLAIRS.CORRECT)
 
     def test_pre2020_user_mismatch(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
@@ -62,6 +63,8 @@ class TestProcess:
         model_issues = IssueTracker()
         model_issues.user_mismatch = True
         assert issues == model_issues
+        print(second_submission.mod._flair_id)
+        assert second_submission.mod.matches_flair(consts.FLAIRS.BAD_ISSUES)
 
     def test_sub_privated(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process
@@ -232,6 +235,7 @@ class TestProcess:
         model_issues.comment_has_no_link = True
         # TODO: Double check it calls CommentHasNoLink with the correct url
         assert issues == model_issues
+        assert second_submission.mod.matches_flair(consts.FLAIRS.BAD_ISSUES)
 
     def test_comment_has_no_link_notfound(self, reddit, last_switcharoo, action, first_roo):
         import switcharoo.core.process

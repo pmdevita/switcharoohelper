@@ -1,11 +1,12 @@
 import praw.exceptions
 import prawcore.exceptions
+import praw.models
 from datetime import datetime, timedelta
 from switcharoo.core import parse
 from switcharoo.config.issues import IssueTracker
 from switcharoo.core.parse import RedditURL
 from switcharoo.core.reddit import ReplyObject
-from switcharoo.config.constants import ONLY_BAD, ALL_ROOS
+from switcharoo.config.constants import ONLY_BAD, ALL_ROOS, FLAIRS
 from switcharoo.core.history import SwitcharooLog, Switcharoo
 from switcharoo.config.credentials import CredentialsLoader
 from switcharoo.core.action import decide_subreddit_privated, increment_user_fixes
@@ -15,13 +16,14 @@ creds = CredentialsLoader.get_credentials()['general']
 DRY_RUN = creds['dry_run'].lower() != "false"
 
 
-def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
+def process(reddit, submission: praw.models.Submission, last_switcharoo: SwitcharooLog, action):
     # First, add this submission to the database
     # Add with submission processing issue to prevent rescans from interfering during add
     tracker = IssueTracker()
     tracker.submission_processing = True
     roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name if submission.author else "",
                               roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
+    submission.mod.flair(**FLAIRS.PENDING)
     # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
@@ -42,6 +44,7 @@ def process(reddit, submission, last_switcharoo: SwitcharooLog, action):
             last_switcharoo.update_request(roo, requests=1, linked_roo=last_good)
     else:
         last_switcharoo.update(roo, reset_issues=True)
+        submission.mod.flair(**FLAIRS.CORRECT)
 
 
 def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True, verbose=True,
@@ -49,7 +52,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     # When scanning the chain with this, do this in two passes. First to re-update the status of each roo submission
     # and secondly to then give instructions to fix
     if stage == ALL_ROOS and verbose:
-        roo.print()
+        print(roo)
     old_tracker = last_switcharoo.get_issues(roo)
 
     # If this roo is currently being processed, don't touch it
@@ -84,19 +87,20 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
 
     grace_period = get_grace_period(roo)
 
-    # If this roo has bad issues or it was marked for noncompliance,
+    # If this roo has bad issues, or it was marked for noncompliance,
     # it should be updated immediately to be removed from the chain
     if new_tracker.has_bad_issues() or old_tracker.user_noncompliance:
         if old_tracker.has_bad_issues():
             if verbose:
-                roo.print()
-                print("Roo was already bad")
+                print(f"{roo} was already bad")
         else:
             if verbose:
-                roo.print()
-                print(f"Roo has gone bad {old_tracker} -> {new_tracker}")
+                print(f"{roo} has gone bad {old_tracker} -> {new_tracker}")
+            # This will delete that post
             action.process(roo, new_tracker, ReplyObject.from_roo(roo), last_switcharoo.last_good(roo, offset=0), mute=mute)
+            # So mark it deleted
             new_tracker.submission_deleted = True
+            # Destroy any edit requests attached to it since they can't fix it anymore
             last_switcharoo.reset_request(roo=roo)
         last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
         return new_tracker
@@ -108,6 +112,8 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
             last_switcharoo.update(roo, roo_issues=new_tracker, reset_issues=True)
             return new_tracker
 
+
+    # By this point, we can know that the roo doesn't have any bad issues
     if new_tracker.has_issues():
         # If this is after they were supposed to fix something, gently ask them again
         # If this was long after they were supposed to fix something and nothing happened, delete the post
@@ -150,7 +156,7 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
     elif stage == ALL_ROOS:
         # If this is after they fixed something, say thank you
         if old_tracker.has_issues():
-            action.thank_you(reply_object=reply_object, request=request)
+            action.thank_you(roo=roo, reply_object=reply_object, request=request)
             increment_user_fixes(last_switcharoo, reply_object)
         else:
             # If the old one didn't have issues, then nothing has changed, it's fine

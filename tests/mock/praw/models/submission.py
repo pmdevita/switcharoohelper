@@ -53,6 +53,7 @@ class MockSubmission:
 class MockSubmissionModerator:
     def __init__(self, submission):
         self._submission = submission
+        self._flair_id = None
 
     def remove(self):
         self._submission.removed_by_category = "deleted"
@@ -60,3 +61,9 @@ class MockSubmissionModerator:
         # 2022 outage
         # self._submission.selftext = "[deleted]"
         self._submission.removed = True
+
+    def flair(self, *, css_class=None, flair_template_id=None, text=None):
+        self._flair_id = flair_template_id
+
+    def matches_flair(self, flair):
+        return self._flair_id == flair["flair_template_id"]

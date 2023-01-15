@@ -6,7 +6,7 @@ import praw
 from switcharoo.config.issues import IssueTracker
 from switcharoo.config.strings import ModActionStrings, WarnStrings, DeleteStrings, ReminderStrings, NewIssueStrings, \
     NewIssueDeleteStrings
-from switcharoo.config.constants import ALL_ROOS
+from switcharoo.config.constants import ALL_ROOS, FLAIRS
 from switcharoo.core.history import Switcharoo
 from switcharoo.core.reddit import ReplyObject, UserDoesNotExist
 from switcharoo.config.credentials import CredentialsLoader
@@ -148,8 +148,11 @@ class ModAction(BaseAction):
         print(f"Thank you {reply_object.author} for fixing your roo! {reply_object.permalink}")
 
         post_creation = reply_object.created
+        if roo.submission:
+            roo.submission.mod.flair(**FLAIRS.CORRECT)
         # Thank yous were implemented after this date and have not been brought earlier yet
         if post_creation > datetime(year=2021, month=6, day=1):
+            # For the weird Reddit API fluke of early 2022
             if request:
                 request_date = request.time.date()
                 request_time = request.time.time()
@@ -263,6 +266,13 @@ class ModAction(BaseAction):
                 # That gets detected here. We then log the issue and then it will get picked up next run
                 print("Tried to fix a submission with no user, marking as noncompliant")
                 issues.user_noncompliance = True
+
+        if roo.submission:
+            if issues.has_bad_issues():
+                roo.submission.mod.flair(**FLAIRS.BAD_ISSUES)
+            elif issues.has_issues():
+                roo.submission.mod.flair(**FLAIRS.ISSUES)
+
         # if request_assistance:
         #     self.reddit.subreddit("switcharoo").message("switcharoohelper requests assistance",
         #                                                 "{}".format(submission.url))
