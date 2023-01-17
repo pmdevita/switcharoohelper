@@ -1,5 +1,5 @@
 bot_name = "SwitcharooHelper"
-version = "3.2.3"
+version = "3.3.0"
 user_agent = f"{bot_name} v{version} by /u/pmdevita"
 subreddit = "switcharoo"
 sleep_time = 120
@@ -11,6 +11,7 @@ ONLY_IGNORED = 1
 ALL_ROOS = 2
 
 CONTEXT_HEADER = "/switcharoo-context:"
+
 
 class FLAIRS:
     PENDING = {"flair_template_id": "393f7464-948a-11ed-ae29-ee9d9b95a22b"}
