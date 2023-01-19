@@ -34,8 +34,9 @@ issues_list = [
     # The submission is a meta post when it should have been a link
     {"type": "submission_is_meta", "bad": True, "resubmit": False},
 
-    # The submission has linked the post on r/switcharoo, not the link
-    {"type": "submission_linked_post", "bad": True, "resubmit": True},
+    # The comment has linked the post on r/switcharoo, not the link
+    # TODO: Rename this too "comment_linked_post"
+    {"type": "submission_linked_post", "bad": False, "resubmit": False},
 
     # The r/switcharoo submission has been deleted
     {"type": "submission_deleted", "bad": True, "resubmit": True},
