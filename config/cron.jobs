@@ -1,4 +1,4 @@
 SHELL=/bin/bash
-45 3 * * * XDG_RUNTIME_DIR=/run/user/$UID systemctl --user start switcharoo_flair
-35 2 * * * cd ~/switcharoo && python -m poetry run switcharoohelper-checkup -s last -l 20 --no-relink --unmute-delete
-# 40 2 * * * cd ~/switcharoo && python -m poetry run switcharoohelper-checkup -s last -t 2021-06-01
+45 3 * * * cd /config && /app/bin/switcharoohelper-flairs
+35 2 * * * cd /config && /app/bin/switcharoohelper-checkup -s last -l 20 --no-relink --unmute-delete
+# 40 2 * * * cd /config && /app/bin/switcharoohelper-checkup -s last -t 2021-06-01
