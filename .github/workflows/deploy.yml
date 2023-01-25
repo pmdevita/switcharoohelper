@@ -3,12 +3,12 @@
 name: Deploy to Production
 
 # Controls when the action will run.
-on:
-  workflow_run:
-    workflows: [ "Switcharoohelper Unit Tests" ]
-    branches: [ master ]
-    types:
-      - completed
+#on:
+#  workflow_run:
+#    workflows: [ "Switcharoohelper Unit Tests" ]
+#    branches: [ master ]
+#    types:
+#      - completed
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:

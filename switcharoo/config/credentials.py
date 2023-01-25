@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import configparser
 
@@ -18,7 +19,7 @@ def get_credentials(file=None):
 
 class CredentialsLoader:
     config = None
-    path = Path(__file__).parent.parent.parent / "credentials.ini"
+    path = Path(os.getcwd()) / "credentials.ini"
 
     @classmethod
     def get_credentials(cls, file=None):
