@@ -14,4 +14,4 @@ RUN apk add bash --no-cache
 COPY --from=builder /app /app
 COPY ./config/cron.jobs /var/spool/cron/crontabs/root
 WORKDIR /config
-CMD ["bash",  "-c", "set -m; crond -L /dev/stdout -f & /app/bin/switcharoohelper; fg %1"]
+CMD ["bash",  "-c", "set -m; crond -L /dev/stdout -f & /app/bin/switcharoohelper > /dev/stdout; fg %1"]
