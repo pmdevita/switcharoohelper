@@ -122,6 +122,12 @@ def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BA
         #     request = last_switcharoo.update_request(roo, requests=1)
 
         last_good = last_switcharoo.last_good(roo)
+        try:
+            last_good.comment.refresh()
+        except praw.exceptions.ClientException:
+            print("Last good comment cannot be loaded, is it in a private subreddit? Skipping for now")
+            return None
+
         # Double check the correct link hasn't changed since last time
         # If it has we need to issue a new request for the new link
         same_link = True

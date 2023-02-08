@@ -2,7 +2,7 @@ name: Build Docker Image
 
 on:
   workflow_run:
-    workflows: [ "Switcharoohelper Unit Tests" ]
+    workflows: [ "Switcharoohelper Build Docker" ]
     branches: [ master ]
     types:
       - completed
