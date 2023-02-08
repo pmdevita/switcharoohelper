@@ -23,7 +23,8 @@ def process(reddit, submission: praw.models.Submission, last_switcharoo: Switcha
     tracker.submission_processing = True
     roo = last_switcharoo.add(submission.id, link_post=not submission.is_self, user=submission.author.name if submission.author else "",
                               roo_issues=tracker, time=datetime.utcfromtimestamp(submission.created_utc))
-    submission.mod.flair(**FLAIRS.PENDING)
+    if not submission.is_self:
+        submission.mod.flair(**FLAIRS.PENDING)
     # Create an issue tracker made from its errors
     tracker = check_errors(reddit, last_switcharoo, roo, init_db=True, submission=submission)
 
@@ -44,7 +45,8 @@ def process(reddit, submission: praw.models.Submission, last_switcharoo: Switcha
             last_switcharoo.update_request(roo, requests=1, linked_roo=last_good)
     else:
         last_switcharoo.update(roo, reset_issues=True)
-        submission.mod.flair(**FLAIRS.CORRECT)
+        if not submission.is_self:
+            submission.mod.flair(**FLAIRS.CORRECT)
 
 
 def reprocess(reddit, roo, last_switcharoo: SwitcharooLog, action, stage=ONLY_BAD, mute=True, verbose=True,
