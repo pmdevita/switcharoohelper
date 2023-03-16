@@ -7,7 +7,7 @@ license = "AGPL-3.0"
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.11"
-praw = "^7.5.0"
+praw = "^7.7"
 prawcore = "^2.3.0"
 pony = "^0.7.16"
 regex = "^2022.1.18"
